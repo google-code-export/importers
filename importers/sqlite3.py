@@ -22,7 +22,10 @@ class Hook:
         """Return a finder if the path contains the location of a sqlite3
         database with the proper schema."""
         original_path = path
+        # XXX Also check cache as that's cheap.
         while not os.path.exists(path):
+            # XXX Does it leave on a trailing '/'? What does that do to
+            #     os.path.exists?
             level_up = os.path.dirname(path)
             if level_up == path:
                 message = "{} does not contain an existent path"
