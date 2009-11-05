@@ -21,6 +21,8 @@ class Hook:
     def __call__(path):
         """Return a finder if the path contains the location of a sqlite3
         database with the proper schema."""
+        # XXX normpath
+        # XXX normcase
         original_path = path
         # XXX Also check cache as that's cheap.
         while not os.path.exists(path):
@@ -35,4 +37,5 @@ class Hook:
         if not os.path.isfile(path):
             raise ImportError("{} is not a file".format(path))
         # XXX verify path is a sqlite3 database; check schema.
+        # XXX Return from cache. Key for file location or package path?
         # XXX return finder
