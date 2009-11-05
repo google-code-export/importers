@@ -1,5 +1,6 @@
 import os
 
+# XXX generator for paths starting from the bottom and working your way up
 
 class Hook:
 
@@ -24,7 +25,7 @@ class Hook:
         # XXX normpath
         # XXX normcase
         original_path = path
-        # XXX Also check cache as that's cheap.
+        # XXX Also check cache as that's cheap, but in a separate loop.
         while not os.path.exists(path):
             # XXX Does it leave on a trailing '/'? What does that do to
             #     os.path.exists?
@@ -37,5 +38,5 @@ class Hook:
         if not os.path.isfile(path):
             raise ImportError("{} is not a file".format(path))
         # XXX verify path is a sqlite3 database; check schema.
-        # XXX Return from cache. Key for file location or package path?
+        # XXX Return from cache; keyed on location of DB.
         # XXX return finder
