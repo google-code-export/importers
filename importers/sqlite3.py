@@ -37,6 +37,7 @@ class Hook:
     def __call__(self, path):
         """Return a finder if the path contains the location of a sqlite3
         database with the proper schema."""
+        original = path
         for path, suffix in super_paths(path):
             if path in self.cxn_cache:
                 return Finder(self._cxn_cache[path], path, suffix)
@@ -49,9 +50,12 @@ class Hook:
                     return Finder(cxn, path, suffix)
                 except ValueError:
                     continue
+            elif os.path.isdir(path):
+                message = "{} does not contain a file path"
+                raise ImportError(message.format(original))
         else:
             message = "{} does not contain a path to a proper sqlite3 database"
-            raise ImportError(message.format(original_path))
+            raise ImportError(message.format(original))
 
     def open(self, path):
         """Verify that a path points to a sqlite3 database."""
