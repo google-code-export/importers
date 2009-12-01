@@ -73,6 +73,34 @@ class FinderTest(unittest.TestCase):
         # No module == no finder.
         raise NotImplementedError
 
+class LoaderTest(unittest.TestCase):
+
+    def _test_module(self):
+        # Load from a module.
+        raise NotImplementedError
+
+    def _test_package(self):
+        # Load a package.
+        raise NotImplementedError
+
+    def _test_lacking_parent(self):
+        # Not having a parent package loaded should not be a problem.
+        raise NotImplementedError
+
+    def _test_module_reuse(self):
+        # Module should be reused if in sys.modules.
+        raise NotImplementedError
+
+    def _test_state_after_failure(self):
+        # A failure to load a module should not alter a pre-existing instance.
+        raise NotImplementedError
+
+    def _test_bad_syntax(self):
+        # Bad syntax == SyntaxError.
+        raise NotImplementedError
+
+    # XXX Care about bytecode tests? Triggers could guarantee state.
+
 
 def main():
     from test.support import run_unittest
