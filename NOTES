@@ -1,0 +1,14 @@
+sqlite3
+=======
+
+Use TEXT or some other column type?
+
+Use triggers to generate bytecode?
+
+Hook
+----
+Verify table structure?
+
+Loader
+------
+Need to care about bad bytecode, or can I rely on triggers to keep the DB sane?
