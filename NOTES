@@ -9,6 +9,17 @@ Hook
 ----
 Verify table structure?
 
+Finder
+------
+Test.
+
+Implement.
+
+
 Loader
 ------
 Need to care about bad bytecode, or can I rely on triggers to keep the DB sane?
+
+Test.
+
+Implement.
