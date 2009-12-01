@@ -47,9 +47,36 @@ class HookTest(unittest.TestCase):
             finder = hook(__file__)
 
 
+class FinderTest(unittest.TestCase):
+
+    def _test_module(self):
+        # Look for a module.
+        raise NotImplementedError
+
+    def _test_package(self):
+        # Look for a package.
+        raise NotImplementedError
+
+    def _test_module_in_package(self):
+        # Look for a module within a package.
+        raise NotImplementedError
+
+    def _test_package_in_package(self):
+        # Look for a sub-package.
+        raise NotImplementedError
+
+    def _test_package_over_module(self):
+        # A package is preferred over a module.
+        raise NotImplementedError
+
+    def _test_failure(self):
+        # No module == no finder.
+        raise NotImplementedError
+
+
 def main():
     from test.support import run_unittest
-    run_unittest(HookTest)
+    run_unittest(HookTest, FinderTest)
 
 
 if __name__ == '__main__':
