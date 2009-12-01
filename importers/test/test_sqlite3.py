@@ -40,9 +40,11 @@ class HookTest(unittest.TestCase):
             hook = importer.Hook()
             finder = hook(indirect_path)  # ImportError is failure.
 
-    def _test_bad_path(self):
+    def test_bad_path(self):
         # A path not containing a DB should raise ImportError.
-        raise NotImplementedError
+        hook = importer.Hook()
+        with self.assertRaises(ImportError):
+            finder = hook(__file__)
 
 
 def main():

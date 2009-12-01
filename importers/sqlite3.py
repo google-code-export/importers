@@ -69,8 +69,11 @@ class Hook:
         cxn = sqlite3.connect(path)
         cur = cxn.cursor()
         # XXX Use an OR check for name field to verify all tables exist
-        cur.execute("""SELECT name FROM sqlite_master
-                        WHERE type='table'""")
+        try:
+            cur.execute("""SELECT name FROM sqlite_master
+                            WHERE type='table'""")
+        except sqlite3.DatabaseError:  # Might be non-DB file.
+            raise ValueError
         for rows in cur:
             if rows[0] == 'PythonCode':
                 # XXX Verify table columns?
