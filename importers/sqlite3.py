@@ -7,14 +7,21 @@ XXX separate table for bytecode and use trigger to update?
 """
 import importlib.abc
 import os
+import sqlite3
 
 # XXX generator for paths starting from the bottom and working your way up
 
 def super_paths(path):
-    path_parts = path.split(os.sep)
-    for pivot in range(len(path_parts)):
-        yield (os.sep.join(path_parts[:-pivot]),
-                os.sep.join(path_parts[-pivot:]))
+    suffix_parts = []
+    while path:
+        yield path, os.sep.join(suffix_parts)
+        new_path, suffix_part = os.path.split(path)
+        # os.path.split('/') == ('/', '')
+        if new_path == path:
+            break
+        else:
+            path = new_path
+            suffix_parts.append(suffix_part)
 
 
 class Hook:
@@ -38,19 +45,19 @@ class Hook:
         """Return a finder if the path contains the location of a sqlite3
         database with the proper schema."""
         original = path
-        for path, suffix in super_paths(path):
-            if path in self.cxn_cache:
-                return Finder(self._cxn_cache[path], path, suffix)
+        for subpath, suffix in super_paths(path):
+            if subpath in self._cxn_cache:
+                return Finder(self._cxn_cache[subpath], subpath, suffix)
 
-        for path, suffix in super_paths(path):
-            if os.path.isfile(path):
+        for subpath, suffix in super_paths(path):
+            if os.path.isfile(subpath):
                 try:
-                    cxn = self.open(path)
-                    self.cxn_cache[path] = cxn
-                    return Finder(cxn, path, suffix)
+                    cxn = self.open(subpath)
+                    self._cxn_cache[subpath] = cxn
+                    return Finder(cxn, subpath, suffix)
                 except ValueError:
                     continue
-            elif os.path.isdir(path):
+            elif os.path.isdir(subpath):
                 message = "{} does not contain a file path"
                 raise ImportError(message.format(original))
         else:
@@ -63,10 +70,13 @@ class Hook:
         cur = cxn.cursor()
         # XXX Use an OR check for name field to verify all tables exist
         cur.execute("""SELECT name FROM sqlite_master
-                        WHERE type='table';""")
-        tables = list(cur)
-        # XXX Verify all desired tables exist; check schema w/ sql column?
-        raise ValueError
+                        WHERE type='table'""")
+        for rows in cur:
+            if rows[0] == 'PythonCode':
+                # XXX Verify table columns?
+                return cxn
+        else:
+            raise ValueError
 
 
 class Finder(importlib.abc.Finder):
