@@ -30,12 +30,15 @@ class HookTest(unittest.TestCase):
         # finder.
         with TestDB() as path:
             hook = importer.Hook()
-            finder = hook(path)
+            finder = hook(path)  # ImportError is failure.
 
-    def _test_indirect_path(self):
+    def test_indirect_path(self):
         # A path containing a DB plus a package directory should retrn a
         # finder.
-        raise NotImplementedError
+        with TestDB() as path:
+            indirect_path = os.path.join(path, 'pkg', 'subpkg')
+            hook = importer.Hook()
+            finder = hook(indirect_path)  # ImportError is failure.
 
     def _test_bad_path(self):
         # A path not containing a DB should raise ImportError.
