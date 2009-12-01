@@ -2,14 +2,12 @@
 Python source and bytecode.
 
 path | source | bytecode | optimized
-XXX separate table for bytecode and use trigger to update?
 
 """
 import importlib.abc
 import os
 import sqlite3
 
-# XXX generator for paths starting from the bottom and working your way up
 
 def super_paths(path):
     suffix_parts = []
@@ -68,7 +66,6 @@ class Hook:
         """Verify that a path points to a sqlite3 database."""
         cxn = sqlite3.connect(path)
         cur = cxn.cursor()
-        # XXX Use an OR check for name field to verify all tables exist
         try:
             cur.execute("""SELECT name FROM sqlite_master
                             WHERE type='table'""")
@@ -90,8 +87,6 @@ class Finder(importlib.abc.Finder):
         """Create a finder bound to a sqlite3 connection with the specified
         package path location."""
         self._cxn = cxn
-        # XXX Normalize paths to match how DB would have been constructed
-        #     e.g. forward slash
         self._path = path
         self._full_path = os.path.join(db_path, path)
 
