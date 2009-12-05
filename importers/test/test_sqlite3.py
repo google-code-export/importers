@@ -14,9 +14,8 @@ def TestDB():
         path = os.path.join(directory, 'importers_test.db')
         cxn = sqlite3.connect(path)
         with cxn:
-            # XXX Should it be TEXT or something else?
-            cxn.execute('''CREATE TABLE PythonCode
-                           (path PRIMARY KEY, py, pyc, pyo)''')
+            for statement in importer.sql_creation:
+                cxn.execute(statement)
         cxn.close()
         yield path
     finally:
