@@ -1,5 +1,6 @@
 sql_creation = [
-    '''CREATE TABLE PythonCode (path PRIMARY KEY, py, pyc, pyo);''',
+    '''CREATE TABLE PythonCode
+         (path TEXT PRIMARY KEY, py BLOB, pyc BLOB, pyo BLOB);''',
     '''CREATE TRIGGER clear_bc AFTER UPDATE OF py ON PythonCode
          BEGIN
            UPDATE PythonCode SET pyc=NULL, pyo=NULL WHERE path = new.path;
@@ -12,7 +13,14 @@ Python source and bytecode.
 
 The code in this module assumes that the following SQL was used to create the
 database being used::
+
     {sql}
+
+The 'path' column contains the relative, OS-neutral, path (i.e. '/' path
+separator) which lacks a file extension for where the file would exist on a
+file system. The 'py' column contains the source code, stored as bytes. The
+'pyc' and 'pyo' columns store the bytecode based on whether or not ``-O`` has
+been passed to the interpreter. Both columns are stored as bytes.
 
 """.format(sql='  \n'.join(sql_creation))
 
@@ -76,7 +84,7 @@ class Hook:
 
     def open(self, path):
         """Verify that a path points to a sqlite3 database."""
-        cxn = sqlite3.connect(path)
+        cxn = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
         cur = cxn.cursor()
         try:
             cur.execute("""SELECT name FROM sqlite_master
@@ -100,11 +108,14 @@ class Finder(importlib.abc.Finder):
         package path location."""
         self._cxn = cxn
         self._path = path
-        self._full_path = os.path.join(db_path, path)
 
     def find_module(self, fullname):
         """See if the specified module is contained within the database."""
-        # XXX Create path
+        mod = fullname.rpartition('.')[-1]
+        if self._path:
+            path = '/'.join([self._path, mod])
+        else:
+            path = mod
         # XXX See if in DB
 
 
