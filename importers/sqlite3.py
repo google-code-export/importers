@@ -1,9 +1,21 @@
-"""Import machinery for using a sqlite3 database as the storage mechanism for
+sql_creation = [
+    '''CREATE TABLE PythonCode (path PRIMARY KEY, py, pyc, pyo);''',
+    '''CREATE TRIGGER clear_bc AFTER UPDATE OF py ON PythonCode
+         BEGIN
+           UPDATE PythonCode SET pyc=NULL, pyo=NULL WHERE path = new.path;
+         END;''',
+]
+
+__doc__ = """
+Import machinery for using a sqlite3 database as the storage mechanism for
 Python source and bytecode.
 
-path | source | bytecode | optimized
+The code in this module assumes that the following SQL was used to create the
+database being used::
+    {sql}
 
-"""
+""".format(sql='  \n'.join(sql_creation))
+
 import importlib.abc
 import os
 import sqlite3
@@ -14,7 +26,7 @@ def super_paths(path):
     while path:
         yield path, os.sep.join(suffix_parts)
         new_path, suffix_part = os.path.split(path)
-        # os.path.split('/') == ('/', '')
+        # Since os.path.split('/') == ('/', '') ...
         if new_path == path:
             break
         else:
