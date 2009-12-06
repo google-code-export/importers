@@ -1,6 +1,7 @@
 from .. import sqlite3 as importer
 import contextlib
 import imp
+from importlib._bootstrap import _suffix_list  # XXX NAUGHTY!
 import marshal
 import os
 import shutil
@@ -55,36 +56,29 @@ class FinderTest(unittest.TestCase):
 
     """
 
+    def add_file(self, cxn, path, data):
+        with cxn:
+            cxn.execute('INSERT INTO FS VALUES (?, ?)', [path, data])
+
     def create_source(self, cxn, path):
         """Create source for the path."""
-        with cxn:
-            cxn.execute('INSERT INTO PythonCode (path, py) VALUES (?, ?)',
-                        [path, 'path = {!r}\n'.format(path).encode('utf-8')])
+        path = path + _suffix_list(imp.PY_SOURCE)[0]
+        self.add_file(cxn, path, 'path = {!r}\n'.format(path).encode('utf-8'))
 
     def add_bytecode(self, cxn, path):
-        """Add bytecode for the path.
-
-        To be called after create_source().
-
-        """
+        """Add bytecode for the path."""
         source = 'path = {!r}\n'.format(path)
         bc = bytearray(imp.get_magic())
         bc.extend(b'\x01\x00\x00\x00')
         bc.extend(marshal.dumps(compile(source, path, 'exec')))
-        with cxn:
-            cxn.execute('UPDATE PythonCode SET py{}=? '
-                        'WHERE path=?'.format('c' if __debug__ else 'o'),
-                        [bc, path])
+        path = path + _suffix_list(imp.PY_COMPILED)[0]
+        self.add_file(cxn, path, bc)
 
     def remove_source(self, cxn, path):
-        """Remove the source for the path.
-
-        To be called after add_bytecode().
-
-        """
+        """Remove the source for the path."""
+        path = path + _suffix_list(imp.PY_SOURCE)[0]
         with cxn:
-            cxn.execute('UPDATE PythonCode SET py=NULL WHERE path=?', [path])
-        self.add_bytecode(cxn, path)  # Trigger wipes out the bytecode.
+            cxn.execute('DELETE FROM FS WHERE path=?', [path])
 
     def run_test(self, name, path, pkg_path=''):
         """Try to find the module at the path containing only source, bytecode
@@ -155,7 +149,7 @@ class LoaderTest(unittest.TestCase):
 
 def main():
     from test.support import run_unittest
-    run_unittest(HookTest)
+    run_unittest(HookTest, FinderTest)
 
 
 if __name__ == '__main__':
