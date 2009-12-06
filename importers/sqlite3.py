@@ -16,8 +16,10 @@ raw bytes for that file.
 
 """.format(sql_creation)
 
+import imp
 import importlib.abc
-from importlib._bootstrap import _check_name  # XXX VERY VERY NAUGHTY!
+# XXX VERY VERY NAUGHTY!
+from importlib._bootstrap import _check_name, _suffix_list
 import os
 import sqlite3
 
@@ -83,6 +85,7 @@ class Hook:
                 cursor = cxn.execute("""SELECT name FROM sqlite_master
                                         WHERE type='table' and name='FS'""")
                 if len(list(cursor)) == 1:
+                    # XXX Verify table structure?
                     return cxn
                 else:
                     raise ValueError
@@ -101,19 +104,29 @@ class Finder(importlib.abc.Finder):
         self._db_path = db_path
         self._path = path
 
+    def __contains__(self, path):
+        """Return True if the path is in the db."""
+        with self._cxn:
+            cursor = self._cxn.execute('SELECT path WHERE path=?', [path])
+            return bool(cursor.fetchone())
+
+    def loader(self, fullname, path):
+        return Loader(self._cxn, self._db_path, fullname, path)
+
     def find_module(self, fullname):
         """See if the specified module is contained within the database."""
         mod_name = fullname.rpartition('.')[-1]
+        extensions = _suffix_list(imp.PY_COMPILED) + _suffix_list(imp.PY_SOURCE)
         if self._path:
             module = '/'.join([self._path, mod_name])
         else:
             module = mod_name
         package = '/'.join([module, '__init__'])
-        for path in (package, module):
-            cursor = self._cxn.execute('SELECT py, pyc, pyo FROM PythonCode '
-                                       'WHERE path=?', [path])
-            if cursor.fetchone():
-                return Loader(self._cxn, fullname, path)
+        for base_path, is_pkg in ((package, True), (module, False)):
+            for ext in extensions:
+                path = base_path + ext
+                if path in self:
+                    return self.loader(fullname, path)
         else:
             return None
 
