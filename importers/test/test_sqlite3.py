@@ -114,13 +114,19 @@ class FinderTest(unittest.TestCase):
         path = 'pkg/__init__'
         self.run_test(name, path)
 
-    def _test_module_in_package(self):
+    def test_module_in_package(self):
         # Look for a module within a package.
-        raise NotImplementedError
+        name = 'pkg.mod'
+        path = 'pkg/mod'
+        pkg_path = 'pkg'
+        self.run_test(name, path, pkg_path)
 
-    def _test_package_in_package(self):
+    def test_package_in_package(self):
         # Look for a sub-package.
-        raise NotImplementedError
+        name = 'pkg.subpkg'
+        path = 'pkg/subpkg/__init__'
+        pkg_path = 'pkg'
+        self.run_test(name, path, pkg_path)
 
     def _test_package_over_module(self):
         # A package is preferred over a module.
