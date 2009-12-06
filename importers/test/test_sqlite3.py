@@ -1,5 +1,7 @@
 from .. import sqlite3 as importer
 import contextlib
+import imp
+import marshal
 import os
 import shutil
 import sqlite3
@@ -54,9 +56,54 @@ class FinderTest(unittest.TestCase):
 
     """
 
-    def _test_module(self):
+    def create_source(self, cxn, path):
+        """Create source for the path."""
+        with cxn:
+            cxn.execute('INSERT INTO PythonCode (path, py) VALUES (?, ?)',
+                        [path, 'path = {!r}\n'.format(path).encode('utf-8')])
+
+    def add_bytecode(self, cxn, path):
+        """Add bytecode for the path.
+
+        To be called after create_source().
+
+        """
+        source = 'path = {!r}\n'.format(path)
+        bc = bytearray(imp.get_magic())
+        bc.extend(b'\x01\x00\x00\x00')
+        bc.extend(marshal.dumps(compile(source, path, 'exec')))
+        with cxn:
+            cxn.execute('UPDATE PythonCode SET py{}=? '
+                        'WHERE path=?'.format('c' if __debug__ else 'o'),
+                        [bc, path])
+
+    def remove_source(self, cxn, path):
+        """Remove the source for the path.
+
+        To be called after add_bytecode().
+
+        """
+        with cxn:
+            cxn.execute('UPDATE PythonCode SET py=NULL WHERE path=?', [path])
+        self.add_bytecode(cxn, path)  # Trigger wipes out the bytecode.
+
+    def test_module(self):
         # Look for a module.
-        raise NotImplementedError
+        name = 'module'
+        path = name
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            finder = importer.Finder(cxn, path, '')
+            # Source
+            self.create_source(cxn, path)
+            self.assertIsNotNone(finder.find_module(name))
+            # Source + bytecode
+            self.add_bytecode(cxn, path)
+            self.assertIsNotNone(finder.find_module(name))
+            # Bytecode
+            self.remove_source(cxn, path)
+            self.assertIsNotNone(finder.find_module(name))
+
 
     def _test_package(self):
         # Look for a package.
@@ -74,9 +121,12 @@ class FinderTest(unittest.TestCase):
         # A package is preferred over a module.
         raise NotImplementedError
 
-    def _test_failure(self):
+    def test_failure(self):
         # No module == no finder.
-        raise NotImplementedError
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            finder = importer.Finder(cxn, db_path, '')
+            self.assertIsNone(finder.find_module('module'))
 
 class LoaderTest(unittest.TestCase):
 

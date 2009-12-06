@@ -118,12 +118,12 @@ class Finder(importlib.abc.Finder):
             module = '/'.join([self._path, mod_name])
         else:
             module = mod_name
-        package = '/'.join(path, '__init__')
+        package = '/'.join([module, '__init__'])
         for path in (package, module):
-            result = self._cxn.execute('SELECT py, pyc, pyo FROM PythonCode'
+            cursor = self._cxn.execute('SELECT py, pyc, pyo FROM PythonCode '
                                        'WHERE path=?', [path])
-            if result.rowcount == 1:
-                return Loader(self._cxn, name, path)
+            if cursor.fetchone():
+                return Loader(self._cxn, fullname, path)
         else:
             return None
 
