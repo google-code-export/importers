@@ -1,4 +1,3 @@
-# XXX Scrap and redo; basically need to make it a generic FS impl.
 sql_creation = """CREATE TABLE FS (path TEXT PRIMARY KEY, data BLOB);"""
 
 __doc__ = """
@@ -24,6 +23,7 @@ import os
 import sqlite3
 
 
+# XXX Best to use OS-neutral paths or let users deal with it?
 def super_paths(path):
     suffix_parts = []
     while path:
