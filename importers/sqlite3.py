@@ -128,7 +128,7 @@ class Finder(importlib.abc.Finder):
             return None
 
 
-class Loader(importlib.abc.PyLoader):
+class Loader(importlib.abc.PyPycLoader):
 
     def __init__(self, cxn, db_path, pkg_path, name, path):
         self._cxn = cxn
@@ -147,3 +147,16 @@ class Loader(importlib.abc.PyLoader):
     def is_package(self, fullname):
         # XXX Base it on the path and if it ends in __init__
         raise NotImplementedError
+
+    def source_mtime(self, fullname):
+        # XXX checks
+        return 1
+
+    def bytecode_path(self, fullname):
+        # XXX
+        raise NotImplementedError
+
+    def write_bytecode(self, fullname, bytecode):
+        # XXX
+        raise NotImplementedError
+
