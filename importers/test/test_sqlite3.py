@@ -92,7 +92,7 @@ class FinderTest(unittest.TestCase):
         + source, and just bytecode."""
         with TestDB() as db_path:
             cxn = sqlite3.connect(db_path)
-            finder = importer.Finder(cxn, path, pkg_path)
+            finder = importer.Finder(cxn, db_path, pkg_path)
             # Source
             self.create_source(cxn, path)
             self.assertIsNotNone(finder.find_module(name))
@@ -128,9 +128,16 @@ class FinderTest(unittest.TestCase):
         pkg_path = 'pkg'
         self.run_test(name, path, pkg_path)
 
-    def _test_package_over_module(self):
+    def test_package_over_module(self):
         # A package is preferred over a module.
-        raise NotImplementedError
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            finder = importer.Finder(cxn, db_path, '')
+            self.create_source(cxn, 'module')
+            self.create_source(cxn, 'module/__init__')
+            loader = finder.find_module('module')
+            self.assertIsNotNone(loader)
+            self.assertEqual(loader._path, 'module/__init__')
 
     def test_failure(self):
         # No module == no finder.
