@@ -148,6 +148,8 @@ class FinderTest(unittest.TestCase):
 
 
 class LoaderTest(unittest.TestCase):
+    # XXX Test implemented methods.
+    # XXX Basic sanity check to make sure it all operates with PyPycLoader.
 
     pass
 
