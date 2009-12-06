@@ -1,12 +1,5 @@
 # XXX Scrap and redo; basically need to make it a generic FS impl.
-sql_creation = [
-    '''CREATE TABLE PythonCode
-         (path TEXT PRIMARY KEY, py BLOB, pyc BLOB, pyo BLOB);''',
-    '''CREATE TRIGGER clear_bc AFTER UPDATE OF py ON PythonCode
-         BEGIN
-           UPDATE PythonCode SET pyc=NULL, pyo=NULL WHERE path = new.path;
-         END;''',
-]
+sql_creation = """CREATE TABLE FS (path TEXT PRIMARY KEY, data BLOB);"""
 
 __doc__ = """
 Import machinery for using a sqlite3 database as the storage mechanism for
@@ -15,17 +8,14 @@ Python source and bytecode.
 The code in this module assumes that the following SQL was used to create the
 database being used::
 
-    {sql}
+  {}
 
-The 'path' column contains the relative, OS-neutral, path (i.e. '/' path
-separator) which lacks a file extension for where the file would exist on a
-file system. The 'py' column contains the source code, stored as bytes. The
-'pyc' and 'pyo' columns store the bytecode based on whether or not ``-O`` has
-been passed to the interpreter. Both columns are stored as bytes.
+The 'path' column contains the relative, OS-neutral path (i.e. '/' path
+separator only) of the files stored in the database. The 'data' column is the
+raw bytes for that file.
 
-""".format(sql='  \n'.join(sql_creation))
+""".format(sql_creation)
 
-import collections
 import importlib.abc
 from importlib._bootstrap import _check_name  # XXX VERY VERY NAUGHTY!
 import os
@@ -64,7 +54,7 @@ class Hook:
 
     def __call__(self, path):
         """Return a finder if the path contains the location of a sqlite3
-        database with the proper schema."""
+        database with the required table."""
         original = path
         for subpath, suffix in super_paths(path):
             if subpath in self._cxn_cache:
@@ -88,18 +78,16 @@ class Hook:
     def open(self, path):
         """Verify that a path points to a sqlite3 database."""
         cxn = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
-        cur = cxn.cursor()
         try:
-            cur.execute("""SELECT name FROM sqlite_master
-                            WHERE type='table'""")
-        except sqlite3.DatabaseError:  # Might be non-DB file.
-            raise ValueError
-        for rows in cur:
-            if rows[0] == 'PythonCode':
-                # XXX Verify table columns?
-                return cxn
-        else:
-            raise ValueError
+            with cxn:
+                cursor = cxn.execute("""SELECT name FROM sqlite_master
+                                        WHERE type='table' and name='FS'""")
+                if len(list(cursor)) == 1:
+                    return cxn
+                else:
+                    raise ValueError
+        except sqlite3.DatabaseError:
+            raise ValueError  # Path is not a sqlite3 file.
 
 
 class Finder(importlib.abc.Finder):

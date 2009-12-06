@@ -16,8 +16,7 @@ def TestDB():
         path = os.path.join(directory, 'importers_test.db')
         cxn = sqlite3.connect(path)
         with cxn:
-            for statement in importer.sql_creation:
-                cxn.execute(statement)
+            cxn.execute(importer.sql_creation)
         cxn.close()
         yield path
     finally:
@@ -156,7 +155,7 @@ class LoaderTest(unittest.TestCase):
 
 def main():
     from test.support import run_unittest
-    run_unittest(HookTest, FinderTest)
+    run_unittest(HookTest)
 
 
 if __name__ == '__main__':
