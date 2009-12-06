@@ -130,7 +130,7 @@ class FinderTest(unittest.TestCase):
             self.create_source(cxn, 'module/__init__')
             loader = finder.find_module('module')
             self.assertIsNotNone(loader)
-            self.assertEqual(loader._path, 'module/__init__')
+            self.assertEqual(loader._path, 'module/__init__.py')
 
     def test_failure(self):
         # No module == no finder.
