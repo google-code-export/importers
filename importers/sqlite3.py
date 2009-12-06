@@ -27,6 +27,7 @@ import sqlite3
 def super_paths(path):
     suffix_parts = []
     while path:
+        # XXX Escape pre-existing backslashes
         yield path, os.sep.join(suffix_parts)
         new_path, suffix_part = os.path.split(path)
         # Since os.path.split('/') == ('/', '') ...
