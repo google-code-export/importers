@@ -107,19 +107,34 @@ class Finder(importlib.abc.Finder):
         """Create a finder bound to a sqlite3 connection with the specified
         package path location."""
         self._cxn = cxn
+        self._db_path = db_path
         self._path = path
 
     def find_module(self, fullname):
         """See if the specified module is contained within the database."""
-        mod = fullname.rpartition('.')[-1]
+        mod_name = fullname.rpartition('.')[-1]
         if self._path:
-            path = '/'.join([self._path, mod])
+            module = '/'.join([self._path, mod_name])
         else:
-            path = mod
-        # XXX See if in DB
+            module = mod_name
+        package = '/'.join(path, '__init__')
+        for path in (package, module):
+            result = self._cxn.execute('SELECT py, pyc, pyo FROM PythonCode'
+                                       'WHERE path=?', [path])
+            if result.rowcount == 1:
+                return Loader(self._cxn, self._db_path, self._path, name,
+                                path)
+        else:
+            return None
 
 
 class Loader(importlib.abc.PyLoader):
+
+    def __init__(self, cxn, db_path, pkg_path, name, path):
+        self._cxn = cxn
+        self._name = name
+        self._path = path
+
 
     def source_path(self, fullname):
         # XXX Raise ImportError if source not in the db
