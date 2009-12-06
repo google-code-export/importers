@@ -87,10 +87,31 @@ class FinderTest(unittest.TestCase):
             cxn.execute('UPDATE PythonCode SET py=NULL WHERE path=?', [path])
         self.add_bytecode(cxn, path)  # Trigger wipes out the bytecode.
 
+    def run_test(self, name, path, pkg_path=''):
+        """Try to find the module at the path containing only source, bytecode
+        + source, and just bytecode."""
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            finder = importer.Finder(cxn, path, pkg_path)
+            # Source
+            self.create_source(cxn, path)
+            self.assertIsNotNone(finder.find_module(name))
+            # Source + bytecode
+            self.add_bytecode(cxn, path)
+            self.assertIsNotNone(finder.find_module(name))
+            # Bytecode
+            self.remove_source(cxn, path)
+            self.assertIsNotNone(finder.find_module(name))
+
+
     def test_module(self):
         # Look for a module.
-        name = 'module'
-        path = name
+        self.run_test('module', 'module')
+
+    def test_package(self):
+        # Look for a package.
+        name = 'pkg'
+        path = 'pkg/__init__'
         with TestDB() as db_path:
             cxn = sqlite3.connect(db_path)
             finder = importer.Finder(cxn, path, '')
@@ -103,11 +124,6 @@ class FinderTest(unittest.TestCase):
             # Bytecode
             self.remove_source(cxn, path)
             self.assertIsNotNone(finder.find_module(name))
-
-
-    def _test_package(self):
-        # Look for a package.
-        raise NotImplementedError
 
     def _test_module_in_package(self):
         # Look for a module within a package.
