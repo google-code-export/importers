@@ -112,18 +112,7 @@ class FinderTest(unittest.TestCase):
         # Look for a package.
         name = 'pkg'
         path = 'pkg/__init__'
-        with TestDB() as db_path:
-            cxn = sqlite3.connect(db_path)
-            finder = importer.Finder(cxn, path, '')
-            # Source
-            self.create_source(cxn, path)
-            self.assertIsNotNone(finder.find_module(name))
-            # Source + bytecode
-            self.add_bytecode(cxn, path)
-            self.assertIsNotNone(finder.find_module(name))
-            # Bytecode
-            self.remove_source(cxn, path)
-            self.assertIsNotNone(finder.find_module(name))
+        self.run_test(name, path)
 
     def _test_module_in_package(self):
         # Look for a module within a package.
