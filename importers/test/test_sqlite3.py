@@ -48,6 +48,12 @@ class HookTest(unittest.TestCase):
 
 class FinderTest(unittest.TestCase):
 
+    """Test the sqlite3 finder.
+
+    Each test checks that source, bytecode, and source + bytecode work.
+
+    """
+
     def _test_module(self):
         # Look for a module.
         raise NotImplementedError

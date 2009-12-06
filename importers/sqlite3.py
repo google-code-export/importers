@@ -25,6 +25,7 @@ been passed to the interpreter. Both columns are stored as bytes.
 """.format(sql='  \n'.join(sql_creation))
 
 import importlib.abc
+from importlib._bootstrap import _check_name  # XXX VERY VERY NAUGHTY!
 import os
 import sqlite3
 
@@ -122,40 +123,54 @@ class Finder(importlib.abc.Finder):
             result = self._cxn.execute('SELECT py, pyc, pyo FROM PythonCode'
                                        'WHERE path=?', [path])
             if result.rowcount == 1:
-                return Loader(self._cxn, self._db_path, self._path, name,
-                                path)
+                return Loader(self._cxn, name, path)
         else:
             return None
 
 
 class Loader(importlib.abc.PyPycLoader):
 
-    def __init__(self, cxn, db_path, pkg_path, name, path):
+    """Load the module found by the finder.
+
+    The loader will ONLY load the module as passed in during instance creation.
+    If other modules are needed then new loader instances should be created by
+    the proper finder.
+
+    """
+
+    def __init__(self, cxn, name, path):
+        """Store the open database, the name of the found module, and the path
+        to the module."""
         self._cxn = cxn
         self._name = name
         self._path = path
 
 
+    @_check_name
     def source_path(self, fullname):
         # XXX Raise ImportError if source not in the db
         raise NotImplementedError
 
     def get_data(self, path):
-        # XXX return the source
+        # XXX return the source or bytecode (do based on file extension)
         raise NotImplementedError
 
+    @_check_name
     def is_package(self, fullname):
         # XXX Base it on the path and if it ends in __init__
         raise NotImplementedError
 
+    @_check_name
     def source_mtime(self, fullname):
         # XXX checks
         return 1
 
+    @_check_name
     def bytecode_path(self, fullname):
         # XXX
         raise NotImplementedError
 
+    @_check_name
     def write_bytecode(self, fullname, bytecode):
         # XXX
         raise NotImplementedError
