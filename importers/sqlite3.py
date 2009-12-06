@@ -108,7 +108,8 @@ class Finder(importlib.abc.Finder):
     def __contains__(self, path):
         """Return True if the path is in the db."""
         with self._cxn:
-            cursor = self._cxn.execute('SELECT path WHERE path=?', [path])
+            cursor = self._cxn.execute('SELECT path FROM FS WHERE path=?',
+                                        [path])
             return bool(cursor.fetchone())
 
     def loader(self, fullname, path):
@@ -142,7 +143,7 @@ class Loader(importlib.abc.PyPycLoader):
 
     """
 
-    def __init__(self, cxn, name, path):
+    def __init__(self, cxn, db_path, name, path):
         """Store the open database, the name of the found module, and the path
         to the module."""
         self._cxn = cxn
