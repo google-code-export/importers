@@ -139,6 +139,7 @@ class FinderTest(unittest.TestCase):
             finder = importer.Finder(cxn, db_path, '')
             self.assertIsNone(finder.find_module('module'))
 
+
 class LoaderTest(unittest.TestCase):
 
     def _test_module(self):
