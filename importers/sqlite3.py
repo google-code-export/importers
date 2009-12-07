@@ -1,4 +1,5 @@
-sql_creation = """CREATE TABLE FS (path TEXT PRIMARY KEY, data BLOB);"""
+sql_creation = """CREATE TABLE FS
+                    (path TEXT PRIMARY KEY, mtime INTEGER, data BLOB);"""
 
 __doc__ = """
 Import machinery for using a sqlite3 database as the storage mechanism for
@@ -21,6 +22,7 @@ import importlib.abc
 from importlib._bootstrap import _check_name, _suffix_list
 import os
 import sqlite3
+import time
 
 
 # XXX Best to use OS-neutral paths or let users deal with it?
@@ -112,8 +114,8 @@ class Finder(importlib.abc.Finder):
                                         [path])
             return bool(cursor.fetchone())
 
-    def loader(self, fullname, path):
-        return Loader(self._cxn, self._db_path, fullname, path)
+    def loader(self, fullname, path, is_pkg):
+        return Loader(self._cxn, self._db_path, fullname, path, is_pkg)
 
     def find_module(self, fullname):
         """See if the specified module is contained within the database."""
@@ -128,9 +130,15 @@ class Finder(importlib.abc.Finder):
             for ext in extensions:
                 path = base_path + ext
                 if path in self:
-                    return self.loader(fullname, path)
+                    return self.loader(fullname, path, is_pkg)
         else:
             return None
+
+
+def neutralpath(path):
+    """Convert a path to only use forward slashes."""
+    if os.sep != '/':
+        return path.replace(os.sep, '/')
 
 
 class Loader(importlib.abc.PyPycLoader):
@@ -143,97 +151,105 @@ class Loader(importlib.abc.PyPycLoader):
 
     """
 
-    def __init__(self, cxn, db_path, name, path):
+    def __init__(self, cxn, db_path, name, path, is_pkg):
         """Store the open database, the name of the found module, and the path
         to the module."""
         self._cxn = cxn
+        self._db_path = db_path
         self._name = name
         self._path = path
+        self._is_pkg = is_pkg
 
-    def fetch_code(self):
-        """Return the source and bytecode (if any) for the path the loader was
-        created for."""
-        sql_select = ('SELECT py, py{} FROM PythonCode '
-                      'WHERE path=?'.format('c' if __debug__ else 'o'))
-
+    def _path_exists(self, path):
         with self._cxn:
-            cursor = self._cxn.execute(sql_select, [self._path])
-            return tuple(cursor)
+            cursor = self._cxn.execute('SELECT path FROM FS WHERE path=?',
+                                        [path])
+            return bool(cursor.fetchone())
 
     @_check_name
     def source_path(self, fullname):
         """Return the source 'path' to the module if the source is available,
-        return None if bytecode exists, else raise ImportError.
+        else return None.
 
-        A two-item tuple is returned for source path where the second item is
-        the string 'py'.
+        Validity checks if the module can be imported through bytecode is
+        handled based on the finder that created this loader found
+        **something** and no source was found.
 
         """
-        source, bytecode = self.fetch_code()
-        if source:
-            return (self._path, 'py')
-        elif bytecode:
-            return None
+        for ext in _suffix_list(imp.PY_SOURCE):
+            # XXX Return absolute path.
+            path = self._path + ext
+            if self._path_exists(path):
+                return path
         else:
-            raise ImportError('{} cannot be handled by this '
-                                'loader'.format(fullname))
+            return None
+
+    @_check_name
+    def bytecode_path(self, fullname):
+        """Return the path to the bytecode of the module (if present), else
+        return None.
+
+        It is assumed that the loader can handle loading the module from source
+        if the bytecode doesn't exist as the finder would not have found
+        anything for the module.
+
+        """
+        for ext in _suffix_list(imp.PY_COMPILED):
+            path = self._path + ext
+            # XXX Return absolute path.
+            if self._path_exists(path):
+                return path
+            else:
+                return None
 
     def get_data(self, path):
         """Return data for the path.
 
-        Source and bytecode paths are represented by a two-item tuple. The
-        first item is the path to the module being loaded. The second item
-        specifies whether the path represents source or bytecode.
+        If a path is relative it is assumed to be anchored to the root of the
+        db.
 
         """
-        if (isinstance(path, collections.Sequence) and len(path) == 2 and
-                path[0] == self.__path and path[1] in {'py', 'pyc', 'pyo'}):
-            source, bytecode = self.fetch_code()
-            if path[1] == 'py':
-                return source
-            if path[1] == 'pyc' and __debug__:
-                return bytecode
-            elif path[1] == 'pyo' and not __debug__:
-                return bytecode
+        if os.path.isabs(path):
+            if not path.startswith(self._db_path + '/'):
+                raise IOError("{} not pointing to {}".format(path,
+                                                             self._db_path))
+            path = path[len(self._db_path+1):]
+        path = neutralpath(path)
+        with self._cxn:
+            cursor = self._cxn.execute('SELECT data FROM FS WHERE path=?',
+                                        [path])
+            result = cursor.fetchone()
+            if result:
+                return result[0]
         # Fall-through failure case.
         raise IOError("the path {!r} does not exist".format(path))
 
     @_check_name
     def is_package(self, fullname):
-        """Return if the module is a package based on whether the path ends in
-        '/__init__'."""
-        return self._path.endswith('/__init__')
+        """Return if the module is a package."""
+        return self._is_pkg
 
     @_check_name
     def source_mtime(self, fullname):
-        """Return 1 for the source mtime.
+        """Return the source mtime.
 
-        Database trigger should guarantee that if the 'py' column is changed
-        for a row that the 'pyc' and 'pyo' columns are set to NULL.
-
-        """
-        return 1
-
-    @_check_name
-    def bytecode_path(self, fullname):
-        """Return the path to the bytecode of the module (if present), None if
-        source is present, or raise ImportError.
-
-        A two-item tuple is used to represent the path. The first item is the
-        path itself with the second item being either 'pyc' or 'pyo' depending
-        on whether __debug__ is true.
+        Because sqlite3 BEFORE triggers have undefined behavior if used on the
+        row being updated there is no database schema protection to make sure
+        the mtime for a source file is updated if modified.
 
         """
-        source, bytecode = self.fetch_code()
-        if bytecode:
-            return (self._path, 'py{}'.format('c' if __debug__ else 'o'))
-        elif source:
-            return None
-        else:
-            raise ImportError('{} is not handled by this '
-                                'loader'.format(fullname))
+        path = self.source_path(fullname)
+        # XXX Strip to relative path
+        with self._cxn:
+            cursor = self._cxn.execute('SELECT mtime FROM FS WHERE path=?',
+                                        [path])
+            return cursor.fetchone()[0]
 
     @_check_name
     def write_bytecode(self, fullname, bytecode):
         """Write the bytecode into the database."""
-        bc_column = 'py{}'.format('c' if __debug__ else 'o')
+        path = self.bytecode_path(fullname)
+        # XXX Strip to relative path
+        with self._cxn:
+            self._cxn.execute('INSERT OR REPLACE INTO FS VALUES (?, ?, ?)',
+                                [path, int(time.time()), bytecode])

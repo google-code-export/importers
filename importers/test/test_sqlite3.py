@@ -58,7 +58,7 @@ class FinderTest(unittest.TestCase):
 
     def add_file(self, cxn, path, data):
         with cxn:
-            cxn.execute('INSERT INTO FS VALUES (?, ?)', [path, data])
+            cxn.execute('INSERT INTO FS VALUES (?, ?, ?)', [path, 1, data])
 
     def create_source(self, cxn, path):
         """Create source for the path."""
