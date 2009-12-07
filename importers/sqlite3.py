@@ -25,12 +25,19 @@ import sqlite3
 import time
 
 
-# XXX Best to use OS-neutral paths or let users deal with it?
+def neutralpath(path):
+    """Convert a path to only use forward slashes."""
+    if os.sep != '/':
+        return path.replace(os.sep, '/')
+    else:
+        return path
+
+
 def super_paths(path):
     suffix_parts = []
     while path:
         # XXX Escape pre-existing backslashes
-        yield path, os.sep.join(suffix_parts)
+        yield path, os.path.join(suffix_parts)
         new_path, suffix_part = os.path.split(path)
         # Since os.path.split('/') == ('/', '') ...
         if new_path == path:
@@ -38,6 +45,13 @@ def super_paths(path):
         else:
             path = new_path
             suffix_parts.append(suffix_part)
+
+
+def remove_file(file_path, full_path):
+    if not full_path.startswith(file_path + os.sep):
+        raise ValueError('{} does not start with {}'.format(full_path,
+                                                            file_path))
+    return full_path[len(file_path+len(os.sep)):]
 
 
 class Hook:
@@ -109,6 +123,7 @@ class Finder(importlib.abc.Finder):
 
     def __contains__(self, path):
         """Return True if the path is in the db."""
+        path = neutralpath(path)
         with self._cxn:
             cursor = self._cxn.execute('SELECT path FROM FS WHERE path=?',
                                         [path])
@@ -122,10 +137,10 @@ class Finder(importlib.abc.Finder):
         mod_name = fullname.rpartition('.')[-1]
         extensions = _suffix_list(imp.PY_COMPILED) + _suffix_list(imp.PY_SOURCE)
         if self._path:
-            module = '/'.join([self._path, mod_name])
+            module = os.path.join(self._path, mod_name)
         else:
             module = mod_name
-        package = '/'.join([module, '__init__'])
+        package = os.path.join(module, '__init__')
         for base_path, is_pkg in ((package, True), (module, False)):
             for ext in extensions:
                 path = base_path + ext
@@ -133,12 +148,6 @@ class Finder(importlib.abc.Finder):
                     return self.loader(fullname, path, is_pkg)
         else:
             return None
-
-
-def neutralpath(path):
-    """Convert a path to only use forward slashes."""
-    if os.sep != '/':
-        return path.replace(os.sep, '/')
 
 
 class Loader(importlib.abc.PyPycLoader):
@@ -161,6 +170,7 @@ class Loader(importlib.abc.PyPycLoader):
         self._is_pkg = is_pkg
 
     def _path_exists(self, path):
+        path = neutralpath(path)
         with self._cxn:
             cursor = self._cxn.execute('SELECT path FROM FS WHERE path=?',
                                         [path])
@@ -177,10 +187,9 @@ class Loader(importlib.abc.PyPycLoader):
 
         """
         for ext in _suffix_list(imp.PY_SOURCE):
-            # XXX Return absolute path.
             path = self._path + ext
             if self._path_exists(path):
-                return path
+                return os.path.join(self._db_path, path)
         else:
             return None
 
@@ -196,9 +205,8 @@ class Loader(importlib.abc.PyPycLoader):
         """
         for ext in _suffix_list(imp.PY_COMPILED):
             path = self._path + ext
-            # XXX Return absolute path.
             if self._path_exists(path):
-                return path
+                return os.path.join(self._db_path, path)
             else:
                 return None
 
@@ -210,7 +218,7 @@ class Loader(importlib.abc.PyPycLoader):
 
         """
         if os.path.isabs(path):
-            if not path.startswith(self._db_path + '/'):
+            if not path.startswith(self._db_path + os.sep):
                 raise IOError("{} not pointing to {}".format(path,
                                                              self._db_path))
             path = path[len(self._db_path+1):]
@@ -239,7 +247,6 @@ class Loader(importlib.abc.PyPycLoader):
 
         """
         path = self.source_path(fullname)
-        # XXX Strip to relative path
         with self._cxn:
             cursor = self._cxn.execute('SELECT mtime FROM FS WHERE path=?',
                                         [path])
@@ -249,7 +256,8 @@ class Loader(importlib.abc.PyPycLoader):
     def write_bytecode(self, fullname, bytecode):
         """Write the bytecode into the database."""
         path = self.bytecode_path(fullname)
-        # XXX Strip to relative path
+        path = remove_file(self._db_path, path)
+        path = neutralpath(path)
         with self._cxn:
             self._cxn.execute('INSERT OR REPLACE INTO FS VALUES (?, ?, ?)',
                                 [path, int(time.time()), bytecode])
