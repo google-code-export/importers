@@ -184,6 +184,28 @@ class LoaderTest(BaseTest):
             full_path = os.path.join(db_path, bc_path)
             self.assertEqual(loader.bytecode_path(name), full_path)
 
+    def test_get_data(self):
+        # Bytes should be returned for the data of the specified path.
+        # XXX
+        pass
+
+    def test_is_package(self):
+        # XXX
+        pass
+
+    def test_source_mtime(self):
+        # XXX
+        pass
+
+    def test_write_bytecode(self):
+        # XXX
+        pass
+
+    def test_loading(self):
+        # Basic sanity check.
+        # XXX
+        pass
+
 
 def main():
     from test.support import run_unittest

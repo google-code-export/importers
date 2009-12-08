@@ -235,6 +235,7 @@ class Loader(importlib.abc.PyPycLoader):
     @_check_name
     def is_package(self, fullname):
         """Return if the module is a package."""
+        # XXX Use actual paths to calculate?
         return self._is_pkg
 
     @_check_name
