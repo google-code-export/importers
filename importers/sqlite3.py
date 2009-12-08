@@ -187,7 +187,7 @@ class Loader(importlib.abc.PyPycLoader):
 
         """
         for ext in _suffix_list(imp.PY_SOURCE):
-            path = self._path + ext
+            path = os.path.splitext(self._path)[0] + ext
             if self._path_exists(path):
                 return os.path.join(self._db_path, path)
         else:
@@ -204,7 +204,7 @@ class Loader(importlib.abc.PyPycLoader):
 
         """
         for ext in _suffix_list(imp.PY_COMPILED):
-            path = self._path + ext
+            path = os.path.splitext(self._path) + ext
             if self._path_exists(path):
                 return os.path.join(self._db_path, path)
             else:

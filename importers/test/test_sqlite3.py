@@ -48,19 +48,13 @@ class HookTest(unittest.TestCase):
             finder = hook(__file__)
 
 
-class FinderTest(unittest.TestCase):
-
-    """Test the sqlite3 finder.
-
-    Each test checks that source, bytecode, and source + bytecode work.
-
-    """
+class BaseTest(unittest.TestCase):
 
     def add_file(self, cxn, path, data):
         with cxn:
             cxn.execute('INSERT INTO FS VALUES (?, ?, ?)', [path, 1, data])
 
-    def create_source(self, cxn, path):
+    def add_source(self, cxn, path):
         """Create source for the path."""
         path = path + _suffix_list(imp.PY_SOURCE)[0]
         self.add_file(cxn, path, 'path = {!r}\n'.format(path).encode('utf-8'))
@@ -80,6 +74,15 @@ class FinderTest(unittest.TestCase):
         with cxn:
             cxn.execute('DELETE FROM FS WHERE path=?', [path])
 
+
+class FinderTest(BaseTest):
+
+    """Test the sqlite3 finder.
+
+    Each test checks that source, bytecode, and source + bytecode work.
+
+    """
+
     def run_test(self, name, path, pkg_path=''):
         """Try to find the module at the path containing only source, bytecode
         + source, and just bytecode."""
@@ -87,7 +90,7 @@ class FinderTest(unittest.TestCase):
             cxn = sqlite3.connect(db_path)
             finder = importer.Finder(cxn, db_path, pkg_path)
             # Source
-            self.create_source(cxn, path)
+            self.add_source(cxn, path)
             self.assertIsNotNone(finder.find_module(name))
             # Source + bytecode
             self.add_bytecode(cxn, path)
@@ -126,8 +129,8 @@ class FinderTest(unittest.TestCase):
         with TestDB() as db_path:
             cxn = sqlite3.connect(db_path)
             finder = importer.Finder(cxn, db_path, '')
-            self.create_source(cxn, 'module')
-            self.create_source(cxn, 'module/__init__')
+            self.add_source(cxn, 'module')
+            self.add_source(cxn, 'module/__init__')
             loader = finder.find_module('module')
             self.assertIsNotNone(loader)
             self.assertEqual(loader._path, 'module/__init__.py')
@@ -140,16 +143,36 @@ class FinderTest(unittest.TestCase):
             self.assertIsNone(finder.find_module('module'))
 
 
-class LoaderTest(unittest.TestCase):
+class LoaderTest(BaseTest):
     # XXX Test implemented methods.
     # XXX Basic sanity check to make sure it all operates with PyPycLoader.
 
-    pass
+    def test_source_path(self):
+        # Make sure the source path is returned for the module.
+        # If no source but bytecode, return None.
+        # Nothing leads to ImportError.
+        name = 'module'
+        source_path = 'module.py'
+        bc_path = source_path + ('c' if __debug__ else 'o')
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            loader = importer.Loader(cxn, db_path, 'module', bc_path,
+                                        False)
+            # Wrong module -> ImportError
+            with self.assertRaises(ImportError):
+                loader.source_path('something')
+            # Just bytecode -> None
+            self.add_bytecode(cxn, name)
+            self.assertIsNone(loader.source_path('module'))
+            # Source -> path
+            self.add_source(cxn, name)
+            full_path = os.path.join(db_path, source_path)
+            self.assertEqual(loader.source_path('module'), full_path)
 
 
 def main():
     from test.support import run_unittest
-    run_unittest(HookTest, FinderTest)
+    run_unittest(HookTest, FinderTest, LoaderTest)
 
 
 if __name__ == '__main__':
