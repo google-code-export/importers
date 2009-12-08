@@ -156,8 +156,7 @@ class LoaderTest(BaseTest):
         bc_path = source_path + ('c' if __debug__ else 'o')
         with TestDB() as db_path:
             cxn = sqlite3.connect(db_path)
-            loader = importer.Loader(cxn, db_path, 'module', bc_path,
-                                        False)
+            loader = importer.Loader(cxn, db_path, 'module', bc_path, False)
             # Wrong module -> ImportError
             with self.assertRaises(ImportError):
                 loader.source_path('something')
@@ -168,6 +167,22 @@ class LoaderTest(BaseTest):
             self.add_source(cxn, name)
             full_path = os.path.join(db_path, source_path)
             self.assertEqual(loader.source_path('module'), full_path)
+
+    def test_bytecode_path(self):
+        # Test that the expected bytecode path is returned.
+        name = 'module'
+        bc_path = 'module.py' + ('c' if __debug__ else 'o')
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            loader = importer.Loader(cxn, db_path, 'module', bc_path, False)
+            # Wrong module
+            with self.assertRaises(ImportError):
+                loader.bytecode_path('something')
+            self.add_source(cxn, name)
+            self.assertIsNone(loader.bytecode_path(name))
+            self.add_bytecode(cxn, name)
+            full_path = os.path.join(db_path, bc_path)
+            self.assertEqual(loader.bytecode_path(name), full_path)
 
 
 def main():
