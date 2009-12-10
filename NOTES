@@ -1,25 +1,154 @@
-sqlite3
-=======
+class PyFileImporter(importlib.abc.Finder, importlib.abc.PyLoader):
 
-Use TEXT or some other column type?
+    """ABC for importing Python source files.
 
-Use triggers to generate bytecode?
+    Required methods to implement:
 
-Hook
-----
-Verify table structure?
+        * file_exists
+        * get_data: inherited
 
-Finder
-------
-Test.
+    """
 
-Implement.
+    def __init__(self, location):
+        self.location = location
+
+    def file_exists(self, path):
+        """Return true if the file path exists, else false.
+
+        Setting 'directory' to true means to check if the path exists and is a
+        directory. Otherwise the default behavior is to perform a file check.
+
+        """
+        # XXX Make it __contains__() instead?
+        # XXX Perhaps add an optional directory_exists() check explicitly for
+        #     ImportWarning?
+
+    def find_module(self, fullname, path=None):
+        # XXX Use generic private method that takes valid types so as to reuse
+        #     for source_path and bytecode_path.
+
+    def source_path(self, fullname):
+        # XXX Recode using generic method shared with find_module.
+        tail_name = fullname.rpartition('.')[-1]
+        # XXX Also look for packages
+        for ext in (x[0] for x in imp.get_suffixes() if x[2] == imp.PY_SOURCE):
+            path = os.path.join(self.location, tail_name + ext)
+            if path:
+                return path
+        else:
+            return None
+
+    def is_package(self, fullname):
+        path = self.get_filename(fullname)
+        if os.path.splitext(os.path.basename(path))[0] == '__init__':
+            return True
+        else:
+            return False
 
 
-Loader
-------
-Need to care about bad bytecode, or can I rely on triggers to keep the DB sane?
+# XXX PyPycFileImporter: add path_mtime, impl source_mtime & bytecode_path
 
-Test.
 
-Implement.
+class ArchiveHook:
+
+    """sys.path_hook ABC for archive files (e.g. zip files).
+    
+    Required methods:
+
+        * open
+        * finder
+    
+    """
+
+    def __init__(self):
+        """Initialize the internal cache of archives."""
+        self._archives = {}
+
+    def __del__(self):
+        """Close all cached archives."""
+        for archive in self._archives.values():
+            try:
+                archive.close()
+            except Exception:
+                pass
+
+    def open(self, path):
+        """Open the path for use, raising ValueError otherwise."""
+
+    def finder(self, archive, archive_path, pkg_path):
+        """Return a finder for the opened archive at the specified package
+        path."""
+
+    def __call__(self, path):
+        # XXX Check cache
+        # XXX Look for file
+        # XXX If file found, see if proper format
+
+
+class PathCache:
+
+    """Caching class for other classes implementing file_exists().
+
+    Accepts the keyword arguments 'hits' and 'misses' to control whether file
+    paths that do or do not exists should be cached, respectively. If you
+    expect an importer to only gain files but not lose them (e.g. source files
+    will not be deleted by new bytecode files will be added) then only have
+    'hits' be true (the default). But if you expect what file_exists() to
+    return to be true for the life of the importer then also set 'misses' to
+    true.
+
+    """
+
+    def __init__(*args, hits=True, misses=False, **kwargs):
+        """Initialize the cache and record what should be cached."""
+        self.__cache_hits = hits
+        self.__cache_misses = misses
+        self.clear()
+        super().__init__(*args, **kwargs)
+
+    def clear(self):
+        """Clear the cache."""
+        self.__path_cache = {}
+
+    def file_exists(self, path):
+        """Try to return the result from cache, else call the super class and
+        cache the result (depending on settings)."""
+        try:
+            return self.__path_cache[path]
+        except KeyError:
+            exists = super().file_exists(path)
+            if exists and self.__cache_hits:
+                self.__path_cache[path] = True
+            elif not exists and self.__cache_misses:
+                self.__path_cache[path] = False
+
+            return exists
+
+
+class Sqlite3Hook(ArchiveHook):
+
+    def open(self, path):
+        # XXX
+
+    def finder(self, cxn, db_path, pkg_path):
+        return Sqlite3Importer(cxn, db_path, pkg_path)
+
+
+class Sqlite3Importer(PyFileImporter):
+
+    def __init__(self, cxn, db_path, pkg_path):
+        super().__init__(os.path.join(db_path, pkg_path))
+        self._cxn = cxn
+        self._db_path = db_path
+
+    def file_exists(self, path):
+        # XXX
+
+    def get_data(self, path):
+        # XXX
+
+    def source_mtime(self, fullname):
+        # XXX
+
+    def write_bytecode(self, fullname, data):
+        # XXX
