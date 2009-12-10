@@ -195,8 +195,17 @@ class LoaderTest(BaseTest):
             self.assertEqual(data, b"path = 'module.py'\n")
 
     def test_is_package(self):
-        # XXX
-        pass
+        # Package should return true, modules false.
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            self.add_source(cxn, 'module')
+            loader = importer.Loader(cxn, db_path, 'module', 'module.py',
+                                        False)
+            self.assertFalse(loader.is_package('module'))
+            self.add_source(cxn, 'pkg/__init__')
+            loader = importer.Loader(cxn, db_path, 'pkg', 'pkg/__init__.py',
+                                        False)
+            self.assertTrue(loader.is_package('pkg'))
 
     def test_source_mtime(self):
         # XXX
