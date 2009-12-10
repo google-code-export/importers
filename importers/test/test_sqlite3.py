@@ -2,6 +2,7 @@ from .. import sqlite3 as importer
 import contextlib
 import imp
 from importlib._bootstrap import _suffix_list  # XXX NAUGHTY!
+from importlib.test.source.util import writes_bytecode_files
 import marshal
 import os
 import shutil
@@ -208,6 +209,7 @@ class LoaderTest(BaseTest):
             self.assertTrue(loader.is_package('pkg'))
 
     def test_source_mtime(self):
+        # Should return 1 (default value being set by mock code).
         with TestDB() as db_path:
             cxn = sqlite3.connect(db_path)
             self.add_source(cxn, 'module')
@@ -215,9 +217,16 @@ class LoaderTest(BaseTest):
                                         False)
             self.assertEqual(loader.source_mtime('module'), 1)
 
+    @writes_bytecode_files
     def test_write_bytecode(self):
-        # XXX
-        pass
+        # Bytecode should end up in the database.
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            self.add_source(cxn, 'module')
+            # XXX loader
+            # XXX call method w/ mock bytes
+            # XXX query DB to verify bytes stored
+            # XXX Verify timestamp is reasonable
 
     def test_loading(self):
         # Basic sanity check.
