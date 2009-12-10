@@ -208,8 +208,12 @@ class LoaderTest(BaseTest):
             self.assertTrue(loader.is_package('pkg'))
 
     def test_source_mtime(self):
-        # XXX
-        pass
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            self.add_source(cxn, 'module')
+            loader = importer.Loader(cxn, db_path, 'module', 'module.py',
+                                        False)
+            self.assertEqual(loader.source_mtime('module'), 1)
 
     def test_write_bytecode(self):
         # XXX

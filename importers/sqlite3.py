@@ -51,7 +51,7 @@ def remove_file(file_path, full_path):
     if not full_path.startswith(file_path + os.sep):
         raise ValueError('{} does not start with {}'.format(full_path,
                                                             file_path))
-    return full_path[len(file_path+len(os.sep)):]
+    return full_path[len(file_path)+len(os.sep):]
 
 
 class Hook:
@@ -235,7 +235,6 @@ class Loader(importlib.abc.PyPycLoader):
     @_check_name
     def is_package(self, fullname):
         """Return if the module is a package."""
-        # XXX Use actual paths to calculate?
         return self._is_pkg
 
     @_check_name
@@ -248,6 +247,7 @@ class Loader(importlib.abc.PyPycLoader):
 
         """
         path = self.source_path(fullname)
+        path = neutralpath(remove_file(self._db_path, path))
         with self._cxn:
             cursor = self._cxn.execute('SELECT mtime FROM FS WHERE path=?',
                                         [path])
