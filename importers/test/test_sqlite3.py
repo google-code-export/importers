@@ -204,7 +204,7 @@ class LoaderTest(BaseTest):
             self.assertFalse(loader.is_package('module'))
             self.add_source(cxn, 'pkg/__init__')
             loader = importer.Loader(cxn, db_path, 'pkg', 'pkg/__init__.py',
-                                        False)
+                                        True)
             self.assertTrue(loader.is_package('pkg'))
 
     def test_source_mtime(self):
