@@ -186,8 +186,13 @@ class LoaderTest(BaseTest):
 
     def test_get_data(self):
         # Bytes should be returned for the data of the specified path.
-        # XXX
-        pass
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            loader = importer.Loader(cxn, db_path, 'module', 'module.py',
+                                        False)
+            self.add_source(cxn, 'module')
+            data = loader.get_data('module.py')
+            self.assertEqual(data, b"path = 'module.py'\n")
 
     def test_is_package(self):
         # XXX
