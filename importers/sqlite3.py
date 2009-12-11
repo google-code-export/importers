@@ -221,7 +221,7 @@ class Loader(importlib.abc.PyPycLoader):
             if not path.startswith(self._db_path + os.sep):
                 raise IOError("{} not pointing to {}".format(path,
                                                              self._db_path))
-            path = path[len(self._db_path+1):]
+            path = path[len(self._db_path)+1:]
         path = neutralpath(path)
         with self._cxn:
             cursor = self._cxn.execute('SELECT data FROM FS WHERE path=?',

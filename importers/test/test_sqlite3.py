@@ -7,6 +7,7 @@ import marshal
 import os
 import shutil
 import sqlite3
+import sys
 import tempfile
 import time
 import unittest
@@ -188,6 +189,7 @@ class LoaderTest(BaseTest):
 
     def test_get_data(self):
         # Bytes should be returned for the data of the specified path.
+        # XXX Test relative paths
         with TestDB() as db_path:
             cxn = sqlite3.connect(db_path)
             loader = importer.Loader(cxn, db_path, 'module', 'module.py',
@@ -238,8 +240,30 @@ class LoaderTest(BaseTest):
 
     def test_loading(self):
         # Basic sanity check.
-        # XXX
-        pass
+        name = 'module'
+        source_path = 'module.py'
+        bytecode_path = source_path + ('c' if __debug__ else 'o')
+        with TestDB() as db_path:
+            cxn = sqlite3.connect(db_path)
+            self.add_source(cxn, name)
+            loader = importer.Loader(cxn, db_path, name, source_path,
+                                        False)
+            try:
+                module = loader.load_module(name)
+            finally:
+                try:
+                    del sys.modules[name]
+                except KeyError:
+                    pass
+            self.assertEqual(module.path, source_path)
+            self.assertEqual(module.__file__,
+                                os.path.join(db_path, source_path))
+            if not sys.dont_write_bytecode:
+                with cxn:
+                    query = 'SELECT mtime, data from FS where path=?'
+                    result = cxn.execute(query, [source_path])
+                    if not result:
+                        self.fail('bytecode not written')
 
 
 def main():
