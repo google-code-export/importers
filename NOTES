@@ -87,24 +87,34 @@ class ArchiveHook:
 
 class PathCache:
 
-    """Caching class for other classes implementing file_exists().
+    """Caches path existence checks for other classes implementing
+    file_exists().
 
-    Accepts the keyword arguments 'hits' and 'misses' to control whether file
-    paths that do or do not exists should be cached, respectively. If you
-    expect an importer to only gain files but not lose them (e.g. source files
-    will not be deleted by new bytecode files will be added) then only have
-    'hits' be true (the default). But if you expect what file_exists() to
-    return to be true for the life of the importer then also set 'misses' to
-    true.
+    This can be useful for mitigating stat calls (or the equivalent) when they
+    are expensive at the cost of dynamicism for the importer. The class allows
+    for controlling whether successful and/or unsuccessful path checks should
+    be cached. If Python code will be added and removed to the store the
+    importer is working with then caching should be turned off to allow the
+    importer to pick up on new code. If only new code will be added to the
+    store (e.g. no new source but new bytecode is a possibility),
+    then only caching successful file checks is desired. But if the importer is
+    interacting with a read-only store then both successes and failures should
+    be cached.
+
+    By default the class caches successes and only caches failures if
+    sys.dont_write_bytecode is true. This should give the best performance for
+    expected semantics of an append-only store (e.g. no new source but new
+    bytecode is possible).
 
     """
 
-    def __init__(*args, hits=True, misses=False, **kwargs):
+    def __init__(*args, cache_success=True,
+                    cache_failure=sys.dont_write_bytecode, **kwargs):
         """Initialize the cache and record what should be cached."""
+        super().__init__(*args, **kwargs)
         self.__cache_hits = hits
         self.__cache_misses = misses
         self.clear()
-        super().__init__(*args, **kwargs)
 
     def clear(self):
         """Clear the cache."""
