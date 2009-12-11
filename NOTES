@@ -21,7 +21,8 @@ class PyFileImporter(importlib.abc.Finder, importlib.abc.PyLoader):
         """
         # XXX Make it __contains__() instead?
         # XXX Perhaps add an optional directory_exists() check explicitly for
-        #     ImportWarning?
+        #     ImportWarning? Or simply special-case it for importlib's FS impl
+        #     by overriding find_module and doing an extra check upon failure?
 
     def find_module(self, fullname, path=None):
         # XXX Use generic private method that takes valid types so as to reuse
