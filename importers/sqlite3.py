@@ -257,6 +257,8 @@ class Loader(importlib.abc.PyPycLoader):
     def write_bytecode(self, fullname, bytecode):
         """Write the bytecode into the database."""
         path = self.bytecode_path(fullname)
+        if path is None:
+            path = self.source_path(fullname) + 'c' if __debug__ else 'o'
         path = remove_file(self._db_path, path)
         path = neutralpath(path)
         with self._cxn:

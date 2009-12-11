@@ -8,6 +8,7 @@ import os
 import shutil
 import sqlite3
 import tempfile
+import time
 import unittest
 
 
@@ -220,13 +221,20 @@ class LoaderTest(BaseTest):
     @writes_bytecode_files
     def test_write_bytecode(self):
         # Bytecode should end up in the database.
+        bytecode_path = 'module.py' + ('c' if __debug__ else 'o')
         with TestDB() as db_path:
             cxn = sqlite3.connect(db_path)
             self.add_source(cxn, 'module')
-            # XXX loader
-            # XXX call method w/ mock bytes
-            # XXX query DB to verify bytes stored
-            # XXX Verify timestamp is reasonable
+            loader = importer.Loader(cxn, db_path, 'module', 'module.py',
+                                        False)
+            loader.write_bytecode('module', b'fake')
+            current_time = time.time()
+            with cxn:
+                cursor = cxn.execute('SELECT mtime, data FROM FS where path=?',
+                                        [bytecode_path])
+                mtime, data = cursor.fetchone()
+            self.assertEqual(data, b'fake')
+            self.assertLessEqual(mtime - current_time, 1)
 
     def test_loading(self):
         # Basic sanity check.
