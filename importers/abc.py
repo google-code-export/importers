@@ -1,0 +1,185 @@
+import abc
+import imp
+import importlib.abc
+
+
+def _super_paths(path):
+    """Returns an iterator which yields a pair of paths created by splitting
+    the original path at different points.
+
+    Splitting starts from the end of the path and works backwards. This is to
+    allow for an optimization where if a file is desired but a directory is
+    found first then the search can cease early.
+
+    """
+    suffix_parts = []
+    while path:
+        yield path, os.path.join(suffix_parts)
+        new_path, suffix_part = os.path.split(path)
+        # Since os.path.split('/') == ('/', '') ...
+        if new_path == path:
+            break
+        else:
+            path = new_path
+            suffix_parts.append(suffix_part)
+
+
+def _file_search(location, fullname, exists, *types_):
+    """Search for a file representing the module in the specified location of
+    the proper type.
+
+    'exists' is expected to be a callable that takes a file path and returns a
+    boolean on whether the path exists or not. 'types_' contains the file types
+    the module can be as represented by imp module constants
+    (e.g.  imp.PY_SOURCE).
+
+    """
+    tail_name = fullname.rpartition('.')[-1]
+    extensions = [x[0] for x in imp.get_suffixes()
+                    if x[2] in types_]
+    module_path = os.path.join(location, tail_name)
+    pkg_path = os.path.join(module_path, '__init__')
+    for base_path in (pkg_path, module_path):
+        for ext in extensions:
+            path = base_path + ext
+            if exists(path):
+                return path
+    else:
+        return None
+
+
+class ArchiveHook(metaclass=abc.ABCMeta):
+
+    """ABC for path hooks handling archive files (e.g. zipfiles).
+
+    The hook keeps a cache of opened archives so that multiple connections to
+    the archive files are not needed. Deletion of the hook will call the
+    close() method on all archives.
+
+    Abstract methods:
+
+        * open
+        * finder
+
+    """
+
+    def __init__(self):
+        """Initialize the internal cache of archives."""
+        self._archives = {}
+
+    def __del__(self):
+        """Close all archives, raising the last exception triggered
+        (if any)."""
+        exception = None
+        for archive in self._archives:
+            try:
+                archive.close()
+            except AttributeError:
+                continue
+            except Exception as exc:
+                exception = exc
+        if exception:
+            raise exception
+
+    @abc.abstractmethod
+    def open(self, path:str) -> object:
+        """Open the (potential) path to an archive, raising ValueError if it is
+        not a path to an archive."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def finder(self, archive:object, archive_path:str, location:str) ->
+            importlib.abc.Finder:
+        """Return a finder for the open archive at the specified location."""
+        raise NotImplementedError
+
+    def __call__(self, path):
+        """See if the path contains an archive file path, returning a finder if
+        appropriate."""
+        for pre_path, location in _super_paths(path):
+            if pre_path in self._archives:
+                return self.finder(self._archives[pre_path], pre_path,
+                                    location)
+
+        for pre_path, location in _super_paths(path):
+            if os.path.isfile(pre_path):
+                try:
+                    archive = self.open(pre_path)
+                except ValueError:
+                    continue
+                self._archives[pre_path] = archive
+                return self.finder(archive, pre_path, location)
+            elif os.path.isdir(pre_path):
+                msg = "{} does not contain a file path".format(path)
+                raise ImportError(msg)
+        else:
+            msg = "{} does not contain a path to an archive".format(path)
+            raise ImportError(msg)
+
+
+class PyFileFinder(importlib.abc.Finder):
+
+    """ABC for finding Python source files.
+
+    Abstract methods:
+
+        * file_exists
+
+    """
+
+    def __init__(self, location):
+        """Store the location that the finder searches in."""
+        self.location = location
+
+    @abc.abstractmethod
+    def file_exists(self, path:str) -> bool:
+        """Return true if the path exists, else false."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def loader(self, fullname:str, path:str) -> importlib.abc.Loader:
+        """Return the loader for the module found at the specified path."""
+        raise NotImplementedError
+
+    def find_module(self, fullname):
+        """Find the module's file path."""
+        path = _file_search(self.location, fullname, self.file_exists,
+                            imp.PY_SOURCE, imp.PY_COMPILED)
+        if path is not None:
+            return loader(fullname, path)
+        else:
+            return None
+
+
+class PyFileLoader(importlib.abc.Loader):
+
+    """ABC for loading Python source files.
+
+    Abstract methods:
+
+        * get_data: inherited
+        * file_exists
+
+    """
+
+    def __init__(self, location):
+        """Store the location that the loader searches in."""
+        self.location = location
+
+    @abstractmethod
+    def file_exists(self, path:str) -> bool:
+        """Return true if the file exists, else false."""
+        raise NotImplementedError
+
+    def source_path(self, fullname):
+        """Return the source path for the module."""
+        return _file_search(self.location, fullname, self.file_exists,
+                            imp.PY_SOURCE)
+
+    def is_package(self, fullname):
+        """Determine if the module is a package based on whether the file is
+        named '__init__'."""
+        path = get_filename(fullname)
+        file_name = os.path.basename(path)
+        return os.path.splitext(file_name)[0] == '__init__'
+
