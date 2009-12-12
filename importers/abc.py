@@ -88,8 +88,7 @@ class ArchiveHook(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def finder(self, archive:object, archive_path:str, location:str) ->
-            importlib.abc.Finder:
+    def finder(self, archive:object, archive_path:str, location:str) -> importlib.abc.Finder:
         """Return a finder for the open archive at the specified location."""
         raise NotImplementedError
 
@@ -166,7 +165,7 @@ class PyFileLoader(importlib.abc.PyLoader):
         """Store the location that the loader searches in."""
         self.location = location
 
-    @abstractmethod
+    @abc.abstractmethod
     def file_exists(self, path:str) -> bool:
         """Return true if the file exists, else false."""
         raise NotImplementedError
@@ -232,8 +231,8 @@ class PyPycFileLoader(importlib.abc.PyPycLoader, PyFileLoader):
             if source_path is None:
                 raise ImportError("cannot find a path to {}".format(fullname))
             base_path = os.path.splitext(source_path)[0]
-            bytecode_ext = (for x[0] for x in imp.get_suffixes()
-                                if x[2] = imp.PY_COMPILED).next()
+            bytecode_ext = (x[0] for x in imp.get_suffixes()
+                                if x[2] == imp.PY_COMPILED).next()
             bytecode_path = base_path + bytecode_ext
         return self.write_data(bytecode_path, data)
 
