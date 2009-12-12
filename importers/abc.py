@@ -1,6 +1,7 @@
 import abc
 import imp
 import importlib.abc
+import os
 
 
 def _super_paths(path):
@@ -14,7 +15,7 @@ def _super_paths(path):
     """
     suffix_parts = []
     while path:
-        yield path, os.path.join(suffix_parts)
+        yield path, (os.path.join(*suffix_parts) if suffix_parts else '')
         new_path, suffix_part = os.path.split(path)
         # Since os.path.split('/') == ('/', '') ...
         if new_path == path:
