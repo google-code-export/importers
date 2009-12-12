@@ -151,7 +151,7 @@ class PyFileFinder(importlib.abc.Finder):
             return None
 
 
-class PyFileLoader(importlib.abc.Loader):
+class PyFileLoader(importlib.abc.PyLoader):
 
     """ABC for loading Python source files.
 
@@ -182,4 +182,58 @@ class PyFileLoader(importlib.abc.Loader):
         path = get_filename(fullname)
         file_name = os.path.basename(path)
         return os.path.splitext(file_name)[0] == '__init__'
+
+
+class PyPycFileLoader(importlib.abc.PyPycLoader, PyFileLoader):
+
+    """ABC for loading Python source and bytecode files.
+
+    Abstract methods:
+
+        * get_data: inherited
+        * file_exists: inherited
+        * path_mtime
+        * write_data
+
+    """
+
+    source_path = PyFileLoader.source_path
+    is_package = PyFileLoader.is_package
+
+    def bytecode_path(self, fullname):
+        """Return the path to the bytecode file."""
+        return _file_search(self.location, fullname, self.file_exists,
+                            imp.PY_COMPILED)
+
+    @abc.abstractmethod
+    def path_mtime(self, path:str) -> int:
+        """Return the modification time for the specified path, raising IOError
+        if the path cannot be found."""
+        raise NotImplementedError
+
+    def source_mtime(self, fullname):
+        source_path = self.source_path(fullname)
+        try:
+            return self.path_mtime(source_path)
+        except IOError:
+            raise ImportError("no modification time for {}".format(fullname))
+
+    @abc.abstractmethod
+    def write_data(self, path:str, data:bytes) -> bool:
+        """Try to write the data to the path, returning a boolean based on
+        whether the bytes were actually written."""
+        raise NotImplementedError
+
+    def write_bytecode(self, fullname, data):
+        """Write the bytecode file if possible."""
+        bytecode_path = self.bytecode_path(fullname)
+        if bytecode_path is None:
+            source_path = self.source_path(fullname)
+            if source_path is None:
+                raise ImportError("cannot find a path to {}".format(fullname))
+            base_path = os.path.splitext(source_path)[0]
+            bytecode_ext = (for x[0] for x in imp.get_suffixes()
+                                if x[2] = imp.PY_COMPILED).next()
+            bytecode_path = base_path + bytecode_ext
+        return self.write_data(bytecode_path, data)
 
