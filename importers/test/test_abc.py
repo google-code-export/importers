@@ -179,10 +179,17 @@ class PyFileLoaderTest(unittest.TestCase):
         loader = MockPyFileLoader('/', 'nothing.py')
         self.assertIsNone(loader.source_path('module'))
 
-    def _test_is_package(self):
+    def test_is_package(self):
         # Should return true for package as delineated by their __init__.py
-        # file.
-        raise NotImplementedError
+        # file (both source and bytecode).
+        test_values = (('module.py', False), ('module/__init__.py', True))
+        for path, result in test_values:
+            loader = MockPyFileLoader('/', '/' + path)
+            self.assertEqual(loader.is_package('module'), result)
+        loader = MockPyFileLoader('/', '/prefix__init__.py')
+        self.assertFalse(loader.is_package('prefix__init__'))
+        loader = MockPyFileLoader('/', '/__init__suffix.py')
+        self.assertFalse(loader.is_package('__init__suffix'))
 
 
 def test_main():

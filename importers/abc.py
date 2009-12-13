@@ -181,7 +181,10 @@ class PyFileLoader(importlib.abc.PyLoader):
     def is_package(self, fullname):
         """Determine if the module is a package based on whether the file is
         named '__init__'."""
-        path = get_filename(fullname)
+        # Python3.2: path = self.get_filename(fullname)
+        path = self.source_path(fullname)
+        if path is None:
+            raise ImportError("cannot handle {}".format(fullname))
         file_name = os.path.basename(path)
         return os.path.splitext(file_name)[0] == '__init__'
 
