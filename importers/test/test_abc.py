@@ -68,17 +68,25 @@ class ArchiveHookTest(unittest.TestCase):
         self.assertIs(archive1, finder[0])
         self.assertEqual(finder[2], 'pkg')
 
-    def _test_directory(self):
+    def test_directory(self):
         # A directory is a failure.
-        raise NotImplementedError
+        directory = os.path.dirname(self.file_path)
+        hook = MockArchiveHook(self.file_path)
+        with self.assertRaises(ImportError):
+            hook(directory)
 
-    def _test_no_actual_path(self):
+    def test_no_actual_path(self):
         # A entirely faked path should fail.
-        raise NotImplementedError
+        fake_path = '/a/b/c/d/e/f'
+        hook = MockArchiveHook(self.file_path)
+        with self.assertRaises(ImportError):
+            hook(fake_path)
 
-    def _test_file_not_arvhive(self):
+    def test_file_not_archive(self):
         # A file that is not a proper archive type should fail.
-        raise NotImplementedError
+        hook = MockArchiveHook('nonexistentfile')
+        with self.assertRaises(ImportError):
+            hook(self.file_path)
 
 
 def test_main():
