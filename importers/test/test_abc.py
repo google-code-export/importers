@@ -145,7 +145,11 @@ class PyFileFinderTest(unittest.TestCase):
         self.assertEqual(loader[0], 'module')
         self.assertEqual(loader[1], '/module/__init__.py')
 
-    # XXX failure
+    def test_failure(self):
+        # Not finding anything leads to None being returned.
+        finder = MockPyFileFinder('/')
+        loader = finder.find_module('module')
+        self.assertIsNone(loader)
 
 
 def test_main():
