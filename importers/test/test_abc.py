@@ -244,7 +244,11 @@ class PyPycFileLoaderTest(unittest.TestCase):
 
     def _test_source_mtime(self):
         # Should return the mtime for a path.
-        self.fail()
+        loader = MockPyPycFileLoader('/')
+        loader.add_file('/module.py', mtime=42)
+        self.assertEqual(loader.source_mtime('module'), 42)
+        with self.assertRaises(ImportError):
+            loader.source_mtime('asdf')
 
     def _write_bytecode(self):
         # Should write the passed-in bytecode to the proper file location.
