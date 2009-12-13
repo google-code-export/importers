@@ -120,12 +120,19 @@ class PyFileFinderTest(unittest.TestCase):
                                     'did not find {}'.format(path))
 
     def test_package(self):
+        # Find a package.
         for extra in ('', BC):
             path = '/pkg/__init__.py' + extra
             finder = MockPyFileFinder('/', path)
             self.assertIsNotNone(finder.find_module('pkg'))
 
-    # XXX submodule
+    def test_submodule(self):
+        # Find a module in a package.
+        for extra in ('', BC):
+            path = '/pkg/module.py' + extra
+            finder = MockPyFileFinder('/pkg', path)
+            self.assertIsNotNone(finder.find_module('pkg.module'))
+
     # XXX subpackage
     # XXX package over module
     # XXX failure
