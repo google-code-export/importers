@@ -137,7 +137,14 @@ class PyFileFinderTest(unittest.TestCase):
         # Find a package within a package.
         self.finder_test('pkg.subpkg', '/pkg', '/pkg/subpkg/__init__.py')
 
-    # XXX package over module
+    def test_package_over_module(self):
+        # Packages should be preferred over modules.
+        finder = MockPyFileFinder('/', '/module.py', '/module/__init__.py')
+        loader = finder.find_module('module')
+        self.assertIsNotNone(loader)
+        self.assertEqual(loader[0], 'module')
+        self.assertEqual(loader[1], '/module/__init__.py')
+
     # XXX failure
 
 
