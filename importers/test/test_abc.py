@@ -152,6 +152,11 @@ class PyFileFinderTest(unittest.TestCase):
         self.assertIsNone(loader)
 
 
+class PyFileLoaderTest(unittest.TestCase):
+
+    """Test importers.abc.PyFileLoader."""
+
+
 def test_main():
     support.run_unittest(
                             ArchiveHookTest,

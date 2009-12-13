@@ -47,4 +47,3 @@ class PathCache:
                 self.__path_cache[path] = False
 
             return exists
-
