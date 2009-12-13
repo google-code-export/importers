@@ -192,13 +192,44 @@ class PyFileLoaderTest(unittest.TestCase):
         self.assertFalse(loader.is_package('__init__suffix'))
 
 
+class MockPyPycFileLoader(importers_abc.PyPycFileLoader):
+
+    def __init__(self, location):
+        self._paths = {}
+        super().__init__(location)
+
+    def add_file(self, path, mtime=1, data=b'junk'):
+        self._paths[path] = (mtime, data)
+
+    def file_exists(self, path):
+        return path in self._paths
+
+    def get_data(self, path):
+        if path not in self._paths:
+            raise IOError
+        return self._paths[path][1]
+
+    def path_mtime(self, path):
+        return self._paths[path][0]
+
+    def write_data(self, path, data):
+        self._paths[path] = (2, data)
+        return True
+
+
 class PyPycFileLoaderTest(unittest.TestCase):
 
     """Test importers.abc.PyPycFileLoader."""
 
-    def _test_is_package(self):
+    def test_is_package(self):
         # Should work with bytecode files as well as source.
-        self.fail()
+        loader = MockPyPycFileLoader('/')
+        loader.add_file('/module1/__init__.py')
+        self.assertTrue(loader.is_package('module1'))
+        loader.add_file('/module2/__init__.py' + BC)
+        self.assertTrue(loader.is_package('module2'))
+        loader.add_file('/module3.py' + BC)
+        self.assertFalse(loader.is_package('module3'))
 
     def _test_bytecode_path(self):
         # Should return the path to the bytecode.
