@@ -187,7 +187,7 @@ class PyFileLoader(importlib.abc.PyLoader):
     def is_package(self, fullname):
         """Determine if the module is a package based on whether the file is
         named '__init__'."""
-        # Python3.2: path = self.get_filename(fullname)
+        # TODO(Python3.2): path = self.get_filename(fullname)
         path = self.source_path(fullname)
         if path is None:
             raise ImportError("cannot handle {}".format(fullname))
@@ -209,7 +209,7 @@ class PyPycFileLoader(importlib.abc.PyPycLoader, PyFileLoader):
 
     source_path = PyFileLoader.source_path
 
-    # Unneeded in Python 3.2 as get_filename() impl in super() will work.
+    # TODO(Python 3.2): remove
     def is_package(self, fullname):
         try:
             return PyFileLoader.is_package(self, fullname)

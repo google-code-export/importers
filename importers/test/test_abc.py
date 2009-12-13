@@ -192,11 +192,33 @@ class PyFileLoaderTest(unittest.TestCase):
         self.assertFalse(loader.is_package('__init__suffix'))
 
 
+class PyPycFileLoaderTest(unittest.TestCase):
+
+    """Test importers.abc.PyPycFileLoader."""
+
+    def _test_is_package(self):
+        # Should work with bytecode files as well as source.
+        self.fail()
+
+    def _test_bytecode_path(self):
+        # Should return the path to the bytecode.
+        self.fail()
+
+    def _test_source_mtime(self):
+        # Should return the mtime for a path.
+        self.fail()
+
+    def _write_bytecode(self):
+        # Should write the passed-in bytecode to the proper file location.
+        self.fail()
+
+
 def test_main():
     support.run_unittest(
                             ArchiveHookTest,
                             PyFileFinderTest,
                             PyFileLoaderTest,
+                            PyPycFileLoaderTest,
                         )
 
 
