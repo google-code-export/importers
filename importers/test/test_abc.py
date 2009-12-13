@@ -210,6 +210,8 @@ class MockPyPycFileLoader(importers_abc.PyPycFileLoader):
         return self._paths[path][1]
 
     def path_mtime(self, path):
+        if path not in self._paths:
+            raise IOError
         return self._paths[path][0]
 
     def write_data(self, path, data):
@@ -242,7 +244,7 @@ class PyPycFileLoaderTest(unittest.TestCase):
         self.assertEqual(loader.bytecode_path('module'), path)
 
 
-    def _test_source_mtime(self):
+    def test_source_mtime(self):
         # Should return the mtime for a path.
         loader = MockPyPycFileLoader('/')
         loader.add_file('/module.py', mtime=42)
