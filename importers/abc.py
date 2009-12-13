@@ -50,6 +50,12 @@ def _file_search(location, fullname, exists, *types_):
         return None
 
 
+def _is_package_file(path):
+    """Check if a file path is for a package's __init__ file."""
+    file_name = os.path.basename(path)
+    return os.path.splitext(file_name)[0] == '__init__'
+
+
 class ArchiveHook(metaclass=abc.ABCMeta):
 
     """ABC for path hooks handling archive files (e.g. zipfiles).
@@ -185,8 +191,7 @@ class PyFileLoader(importlib.abc.PyLoader):
         path = self.source_path(fullname)
         if path is None:
             raise ImportError("cannot handle {}".format(fullname))
-        file_name = os.path.basename(path)
-        return os.path.splitext(file_name)[0] == '__init__'
+        return _is_package_file(path)
 
 
 class PyPycFileLoader(importlib.abc.PyPycLoader, PyFileLoader):
@@ -203,7 +208,16 @@ class PyPycFileLoader(importlib.abc.PyPycLoader, PyFileLoader):
     """
 
     source_path = PyFileLoader.source_path
-    is_package = PyFileLoader.is_package
+
+    # Unneeded in Python 3.2 as get_filename() impl in super() will work.
+    def is_package(self, fullname):
+        try:
+            return PyFileLoader.is_package(self, fullname)
+        except ImportError:
+            path = self.bytecode_path(fullname)
+            if path is None:
+                raise ImportError("cannot handle {}".format(fullname))
+            return _is_package_file(path)
 
     def bytecode_path(self, fullname):
         """Return the path to the bytecode file."""
