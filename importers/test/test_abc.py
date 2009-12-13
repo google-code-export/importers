@@ -152,15 +152,44 @@ class PyFileFinderTest(unittest.TestCase):
         self.assertIsNone(loader)
 
 
+class MockPyFileLoader(importers_abc.PyFileLoader):
+
+    def __init__(self, location, *paths):
+        self._paths = set(paths)
+        super().__init__(location)
+
+    def get_data(self, path):
+        return path
+
+    def file_exists(self, path):
+        return path in self._paths
+
+
 class PyFileLoaderTest(unittest.TestCase):
 
     """Test importers.abc.PyFileLoader."""
+
+    def test_source_path(self):
+        # Should return the path to the source or None if there isn't any.
+        loader = MockPyFileLoader('/', '/module.py')
+        self.assertEqual(loader.source_path('module'), '/module.py')
+        bc_path = '/module.py' + BC
+        loader = MockPyFileLoader('/', bc_path)
+        self.assertIsNone(loader.source_path('module'))
+        loader = MockPyFileLoader('/', 'nothing.py')
+        self.assertIsNone(loader.source_path('module'))
+
+    def _test_is_package(self):
+        # Should return true for package as delineated by their __init__.py
+        # file.
+        raise NotImplementedError
 
 
 def test_main():
     support.run_unittest(
                             ArchiveHookTest,
                             PyFileFinderTest,
+                            PyFileLoaderTest,
                         )
 
 
