@@ -251,8 +251,8 @@ class PyPycFileLoader(importlib.abc.PyPycLoader, PyFileLoader):
             if source_path is None:
                 raise ImportError("cannot find a path to {}".format(fullname))
             base_path = os.path.splitext(source_path)[0]
-            bytecode_ext = (x[0] for x in imp.get_suffixes()
-                                if x[2] == imp.PY_COMPILED).next()
+            bytecode_ext = next(x[0] for x in imp.get_suffixes()
+                                        if x[2] == imp.PY_COMPILED)
             bytecode_path = base_path + bytecode_ext
         return self.write_data(bytecode_path, data)
 

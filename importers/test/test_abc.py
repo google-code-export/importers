@@ -252,9 +252,17 @@ class PyPycFileLoaderTest(unittest.TestCase):
         with self.assertRaises(ImportError):
             loader.source_mtime('asdf')
 
-    def _write_bytecode(self):
+    def test_write_bytecode(self):
         # Should write the passed-in bytecode to the proper file location.
-        self.fail()
+        loader = MockPyPycFileLoader('/')
+        source_path = '/module.py'
+        loader.add_file(source_path)
+        self.assertTrue(loader.write_bytecode('module', b'data'))
+        bc_path = source_path + BC
+        self.assertIn(bc_path, loader._paths)
+        self.assertEqual(loader._paths[bc_path][1], b'data')
+        self.assertTrue(loader.write_bytecode('module', b'data2'))
+        self.assertEqual(loader._paths[bc_path][1], b'data2')
 
 
 def test_main():
