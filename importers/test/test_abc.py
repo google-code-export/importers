@@ -111,36 +111,32 @@ class PyFileFinderTest(unittest.TestCase):
 
     """Test importers.abc.PyFileFinder."""
 
+    def finder_test(self, fullname, location, source_path):
+        for extra in ('', BC):
+            path = source_path + extra
+            finder = MockPyFileFinder(location, path)
+            loader = finder.find_module(fullname)
+            self.assertIsNotNone(loader)
+            if not None:
+                self.assertEqual(loader[0], fullname)
+                self.assertEqual(loader[1], path)
+
     def test_module(self):
         # Find a module.
-        for extra in ('', BC):
-            path = '/module.py' + extra
-            finder = MockPyFileFinder('/', path)
-            self.assertIsNotNone(finder.find_module('module'),
-                                    'did not find {}'.format(path))
+        self.finder_test('module', '/', '/module.py')
 
     def test_package(self):
         # Find a package.
-        for extra in ('', BC):
-            path = '/pkg/__init__.py' + extra
-            finder = MockPyFileFinder('/', path)
-            self.assertIsNotNone(finder.find_module('pkg'))
+        self.finder_test('pkg', '/', '/pkg/__init__.py')
 
     def test_submodule(self):
         # Find a module in a package.
-        for extra in ('', BC):
-            path = '/pkg/module.py' + extra
-            finder = MockPyFileFinder('/pkg', path)
-            self.assertIsNotNone(finder.find_module('pkg.module'))
+        self.finder_test('pkg.submodule', '/pkg', '/pkg/submodule.py')
 
     def test_subpackage(self):
         # Find a package within a package.
-        for extra in ('', BC):
-            path = '/pkg/sub/__init__.py' + extra
-            finder = MockPyFileFinder('/pkg', path)
-            self.assertIsNotNone(finder.find_module('pkg.sub'))
+        self.finder_test('pkg.subpkg', '/pkg', '/pkg/subpkg/__init__.py')
 
-    # XXX subpackage
     # XXX package over module
     # XXX failure
 
