@@ -17,7 +17,7 @@ class MockArchiveHook(importers_abc.ArchiveHook):
         if path != self._file_path:
             raise ValueError
         else:
-            return path
+            return [path]  # Need a unique ID every time.
 
     def finder(self, *args):
         return args
@@ -39,7 +39,7 @@ class ArchiveHookTest(unittest.TestCase):
         except ImportError:
             self.fail("hook could not find direct path to archive")
         else:
-            self.assertEqual(finder[0], self.file_path)
+            self.assertEqual(finder[0][0], self.file_path)
             self.assertEqual(finder[1], self.file_path)
             self.assertEqual(finder[2], '')
 
@@ -55,14 +55,18 @@ class ArchiveHookTest(unittest.TestCase):
             self.fail("hook could not find {} in {}".format(self.file_path,
                                                             path))
         else:
-            self.assertEqual(finder[0], self.file_path)
+            self.assertEqual(finder[0][0], self.file_path)
             self.assertEqual(finder[1], self.file_path)
             self.assertEqual(finder[2], pkg_path)
 
-    def _test_caching(self):
+    def test_caching(self):
         # A previously found archive should always be returned, no matter what
         # package path is tacked on.
-        raise NotImplementedError
+        hook = MockArchiveHook(self.file_path)
+        archive1 = hook(self.file_path)[0]
+        finder = hook(os.path.join(self.file_path, 'pkg'))
+        self.assertIs(archive1, finder[0])
+        self.assertEqual(finder[2], 'pkg')
 
     def _test_directory(self):
         # A directory is a failure.
