@@ -1,4 +1,5 @@
 import abc
+import collections
 import imp
 import importlib.abc
 import os
@@ -13,7 +14,7 @@ def _super_paths(path):
     found first then the search can cease early.
 
     """
-    suffix_parts = []
+    suffix_parts = collections.deque(maxlen=path.count(os.sep))
     while path:
         yield path, (os.path.join(*suffix_parts) if suffix_parts else '')
         new_path, suffix_part = os.path.split(path)
@@ -22,7 +23,7 @@ def _super_paths(path):
             break
         else:
             path = new_path
-            suffix_parts.append(suffix_part)
+            suffix_parts.appendleft(suffix_part)
 
 
 def _file_search(location, fullname, exists, *types_):

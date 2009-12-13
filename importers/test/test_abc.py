@@ -1,4 +1,5 @@
 from .. import abc as importers_abc
+import os
 import tempfile
 from test import support
 import unittest
@@ -42,10 +43,21 @@ class ArchiveHookTest(unittest.TestCase):
             self.assertEqual(finder[1], self.file_path)
             self.assertEqual(finder[2], '')
 
-    def _test_buried_path(self):
+    def test_buried_path(self):
         # An archive path with a package path tacked on should find the archive
         # path.
-        raise NotImplementedError
+        pkg_path = os.path.join('some', 'pkg', 'stuff')
+        path = os.path.join(self.file_path, pkg_path)
+        hook = MockArchiveHook(self.file_path)
+        try:
+            finder = hook(path)
+        except ImportError:
+            self.fail("hook could not find {} in {}".format(self.file_path,
+                                                            path))
+        else:
+            self.assertEqual(finder[0], self.file_path)
+            self.assertEqual(finder[1], self.file_path)
+            self.assertEqual(finder[2], pkg_path)
 
     def _test_caching(self):
         # A previously found archive should always be returned, no matter what
