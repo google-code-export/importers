@@ -231,9 +231,16 @@ class PyPycFileLoaderTest(unittest.TestCase):
         loader.add_file('/module3.py' + BC)
         self.assertFalse(loader.is_package('module3'))
 
-    def _test_bytecode_path(self):
+    def test_bytecode_path(self):
         # Should return the path to the bytecode.
-        self.fail()
+        loader = MockPyPycFileLoader('/')
+        path = '/module.py'
+        loader.add_file(path)
+        self.assertIsNone(loader.bytecode_path('module'))
+        path = path + BC
+        loader.add_file(path)
+        self.assertEqual(loader.bytecode_path('module'), path)
+
 
     def _test_source_mtime(self):
         # Should return the mtime for a path.
