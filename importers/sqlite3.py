@@ -304,6 +304,9 @@ class Sqlite3Importer(importers_abc.PyFileFinder, importers_abc.PyPycFileLoader)
         self._cxn = db
         self._db_path = db_path
 
+    def loader(self, *args, **kwargs):
+        return self
+
     def file_exists(self, path):
         path = neutralpath(path)
         with self._cxn:

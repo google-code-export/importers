@@ -266,9 +266,56 @@ class LoaderTest(BaseTest):
                         self.fail('bytecode not written')
 
 
+
+class Hook2Test(unittest.TestCase):
+
+    """Test importers.abc.Hook2."""
+
+    def test_open_db(self):
+        # A path to a DB with the proper table should succeed.
+        hook = importer.Hook2()
+        with TestDB() as db_path:
+            db = hook.open(db_path)
+            db.close()
+            self.assertTrue(isinstance(db, sqlite3.Connection))
+
+    def test_open_bad_db(self):
+        # Opening a DB w/o the proper table should fail.
+        hook = importer.Hook2()
+        with TestDB() as db_path:
+            db = sqlite3.connect(db_path)
+            with db:
+                db.execute('DROP TABLE IF EXISTS FS')
+            db.close()
+            with self.assertRaises(ValueError):
+                hook.open(db_path)
+
+    def test_open_bad_file(self):
+        # A non-DB file should fail.
+        hook = importer.Hook2()
+        fd, temp_path = tempfile.mkstemp()
+        os.close(fd)
+        try:
+            with self.assertRaises(ValueError):
+                hook.open(temp_path)
+        finally:
+            os.unlink(temp_path)
+
+    def test_finder(self):
+        # Should return an instance of Sqlite3Importer.
+        hook = importer.Hook2()
+        with TestDB() as db_path:
+            db = hook.open(db_path)
+            finder = hook.finder(db, db_path, '')
+            self.assertTrue(isinstance(finder, importer.Sqlite3Importer))
+
+
 def main():
     from test.support import run_unittest
-    run_unittest(HookTest, FinderTest, LoaderTest)
+    #run_unittest(HookTest, FinderTest, LoaderTest)
+    run_unittest(
+            Hook2Test,
+            )
 
 
 if __name__ == '__main__':
