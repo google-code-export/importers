@@ -89,8 +89,48 @@ class ArchiveHookTest(unittest.TestCase):
             hook(self.file_path)
 
 
+class MockPyFileFinder(importers_abc.PyFileFinder):
+
+    """Mock PyFileFinder implementation."""
+
+    def __init__(self, location, *args):
+        """Set what files "exist"."""
+        self._paths = set(args)
+        super().__init__(location)
+
+    def file_exists(self, path):
+        return path in self._paths
+
+    def loader(self, *args):
+        return args
+
+
+BC = 'c' if __debug__ else 'o'
+
+class PyFileFinderTest(unittest.TestCase):
+
+    """Test importers.abc.PyFileFinder."""
+
+    def test_module(self):
+        # Find a module.
+        for extra in ('', BC):
+            path = '/module.py' + extra
+            finder = MockPyFileFinder('/', path)
+            self.assertIsNotNone(finder.find_module('module'),
+                                    'did not find {}'.format(path))
+
+    # XXX package
+    # XXX submodule
+    # XXX subpackage
+    # XXX package over module
+    # XXX failure
+
+
 def test_main():
-    support.run_unittest(ArchiveHookTest)
+    support.run_unittest(
+                            ArchiveHookTest,
+                            PyFileFinderTest,
+                        )
 
 
 if __name__ == '__main__':

@@ -125,6 +125,7 @@ class PyFileFinder(importlib.abc.Finder):
     Abstract methods:
 
         * file_exists
+        * loader
 
     """
 
@@ -147,7 +148,7 @@ class PyFileFinder(importlib.abc.Finder):
         path = _file_search(self.location, fullname, self.file_exists,
                             imp.PY_SOURCE, imp.PY_COMPILED)
         if path is not None:
-            return loader(fullname, path)
+            return self.loader(fullname, path)
         else:
             return None
 
