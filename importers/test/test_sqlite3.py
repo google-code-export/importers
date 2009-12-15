@@ -310,6 +310,35 @@ class Hook2Test(unittest.TestCase):
             self.assertTrue(isinstance(finder, importer.Sqlite3Importer))
 
 
+class Sqlite3ImporterTest(unittest.TestCase):
+
+    """Test importers.sqlite.Sqlite3Importer."""
+
+    def _test_loader(self):
+        # Returns self.
+        self.fail()
+
+    def _test_file_exists(self):
+        self.fail()
+
+    def _test_get_data(self):
+        # should work w/ absolute and relative paths.
+        self.fail()
+
+    def _test_path_mtime(self):
+        # Should return the proper mtime.
+        self.fail()
+
+    def _test_write_data(self):
+        # Should write the data to the DB.
+        self.fail()
+
+
+class IntegrationTest(unittest.TestCase):
+
+    """Test that integration of all components."""
+
+
 def main():
     from test.support import run_unittest
     #run_unittest(HookTest, FinderTest, LoaderTest)
