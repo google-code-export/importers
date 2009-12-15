@@ -310,33 +310,99 @@ class Hook2Test(unittest.TestCase):
             self.assertTrue(isinstance(finder, importer.Sqlite3Importer))
 
 
-class Sqlite3ImporterTest(unittest.TestCase):
+class PyFileLoaderTest(unittest.TestCase):
 
-    """Test importers.sqlite.Sqlite3Importer."""
+    """Superclass for testing py file loaders.
 
-    def _test_loader(self):
-        # Returns self.
-        self.fail()
+    Subclasses must provide the following attributes:
 
-    def _test_file_exists(self):
-        self.fail()
+        * base_path
+            Base path where created files are kept (e.g a directory or archive
+            file).
+        * importer
+            The loader. It must contain a file relative to
+            self.relative_file_path with the value of self.data. The location
+            of the loader should be self.location.
 
-    def _test_get_data(self):
-        # should work w/ absolute and relative paths.
-        self.fail()
+    """
 
-    def _test_path_mtime(self):
+    location = 'pkg'
+    relative_file_path = os.path.join('pkg', 'module.py')
+    data = b'fake'
+
+    def test_file_exists(self):
+        # Test that file_exists returns true for existing paths and false
+        # otherwise.
+        path = os.path.join(self.base_path, self.relative_file_path)
+        self.assertTrue(self.importer.file_exists(path))
+        self.assertFalse(self.importer.file_exists('nothing'))
+
+    def test_get_data(self):
+        # Should return the data that is stored.
+        path = os.path.join(self.base_path, self.relative_file_path)
+        self.assertEqual(self.importer.get_data(path), self.data)
+
+
+class PyPycFileLoaderTest(PyFileLoaderTest):
+
+    """Superclass for testing py/pyc file loaders.
+
+    Subclasses must provide the following attributes in addition to the one's
+    required by the subclass:
+
+        * mtime
+            The modification time for the file.
+        * mutable
+            True/false value indicating if the loader can write data.
+
+    """
+
+    def test_path_mtime(self):
         # Should return the proper mtime.
-        self.fail()
+        path = os.path.join(self.base_path, self.relative_file_path)
+        self.assertEqual(self.importer.path_mtime(path), self.mtime)
 
-    def _test_write_data(self):
+    def test_write_data(self):
         # Should write the data to the DB.
-        self.fail()
+        if not self.mutable:
+            self.skip("loader must support file mutation")
+        path = os.path.join(self.base_path, self.relative_file_path)
+        new_data = b'more fake'
+        self.assertTrue(self.importer.write_data(path, new_data))
+        self.assertEqual(self.importer.get_data(path), new_data)
+
+
+class Sqlite3ImporterTest(PyPycFileLoaderTest):
+
+    mutable = True
+
+    def setUp(self):
+        self._directory = tempfile.mkdtemp()
+        self.base_path = os.path.join(self._directory, 'importers_test.db')
+        relative_path = importer.neutralpath(self.relative_file_path)
+        self.mtime = 42
+        self._cxn = sqlite3.connect(self.base_path)
+        with self._cxn:
+            self._cxn.execute(importer.sql_creation)
+            self._cxn.execute('INSERT INTO FS VALUES (?, ?, ?)',
+                                [relative_path, self.mtime, self.data])
+        self.importer = importer.Sqlite3Importer(self._cxn, self.base_path,
+                                                    self.location)
+
+    def tearDown(self):
+        self._cxn.close()
+        shutil.rmtree(self._directory)
+
+    def test_loader(self):
+        # Returns self.
+        self.assertIs(self.importer, self.importer.loader())
 
 
 class IntegrationTest(unittest.TestCase):
 
     """Test that integration of all components."""
+
+    pass
 
 
 def main():
@@ -344,6 +410,7 @@ def main():
     #run_unittest(HookTest, FinderTest, LoaderTest)
     run_unittest(
             Hook2Test,
+            Sqlite3ImporterTest,
             )
 
 

@@ -308,6 +308,10 @@ class Sqlite3Importer(importers_abc.PyFileFinder, importers_abc.PyPycFileLoader)
         return self
 
     def file_exists(self, path):
+        try:
+            path = remove_file(self._db_path, path)
+        except ValueError:
+            return False
         path = neutralpath(path)
         with self._cxn:
             cursor = self._cxn.execute('SELECT path FROM FS WHERE path=?',
@@ -353,3 +357,4 @@ class Sqlite3Importer(importers_abc.PyFileFinder, importers_abc.PyPycFileLoader)
         with self._cxn:
             self._cxn.execute('INSERT OR REPLACE INTO FS VALUES (?, ?, ?)',
                                 [path, int(time.time()), data])
+        return True
