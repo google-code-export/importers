@@ -342,6 +342,15 @@ class PyFileLoaderTest(unittest.TestCase):
         path = os.path.join(self.base_path, self.relative_file_path)
         self.assertEqual(self.importer.get_data(path), self.data)
 
+    def test_load_module(self):
+        # Integration test for load_module().
+        module = self.importer.load_module('pkg.module')
+        try:
+            self.assertTrue(hasattr(module, 'fake'))
+            self.assertEqual(module.fake, True)
+        finally:
+            del sys.modules['pkg.module']
+
 
 class PyPycFileLoaderTest(PyFileLoaderTest):
 
@@ -397,12 +406,10 @@ class Sqlite3ImporterTest(PyPycFileLoaderTest):
         # Returns self.
         self.assertIs(self.importer, self.importer.loader())
 
-
-class IntegrationTest(unittest.TestCase):
-
-    """Test that integration of all components."""
-
-    pass
+    def test_find_module(self):
+        # Integration test for find_module.
+        loader = self.importer.find_module('pkg.module')
+        self.assertIsNotNone(loader)
 
 
 def main():

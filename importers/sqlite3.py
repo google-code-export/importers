@@ -300,7 +300,7 @@ class Sqlite3Importer(importers_abc.PyFileFinder, importers_abc.PyPycFileLoader)
     """Importer for sqlite3 databases."""
 
     def __init__(self, db, db_path, location):
-        super().__init__(location)
+        super().__init__(os.path.join(db_path, location))
         self._cxn = db
         self._db_path = db_path
 
