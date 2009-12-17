@@ -1,15 +1,10 @@
 from .. import sqlite3 as importer
 import contextlib
-import imp
-from importlib._bootstrap import _suffix_list  # XXX NAUGHTY!
-from importlib.test.source.util import writes_bytecode_files
-import marshal
 import os
 import shutil
 import sqlite3
 import sys
 import tempfile
-import time
 import unittest
 
 
