@@ -328,7 +328,7 @@ class PyFileLoaderTest(unittest.TestCase):
 
     location = 'pkg'
     relative_file_path = os.path.join('pkg', 'module.py')
-    data = b'fake'
+    data = b'fake = True'
 
     def test_file_exists(self):
         # Test that file_exists returns true for existing paths and false
@@ -367,7 +367,7 @@ class PyPycFileLoaderTest(PyFileLoaderTest):
         if not self.mutable:
             self.skip("loader must support file mutation")
         path = os.path.join(self.base_path, self.relative_file_path)
-        new_data = b'more fake'
+        new_data = b'fake = False'
         self.assertTrue(self.importer.write_data(path, new_data))
         self.assertEqual(self.importer.get_data(path), new_data)
 
