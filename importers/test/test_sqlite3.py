@@ -24,11 +24,11 @@ def TestDB():
 
 class Sqlite3HookTest(unittest.TestCase):
 
-    """Test importers.abc.Hook2."""
+    """Test importers.abc.Hook."""
 
     def test_open_db(self):
         # A path to a DB with the proper table should succeed.
-        hook = importer.Hook2()
+        hook = importer.Hook()
         with TestDB() as db_path:
             db = hook.open(db_path)
             db.close()
@@ -36,7 +36,7 @@ class Sqlite3HookTest(unittest.TestCase):
 
     def test_open_bad_db(self):
         # Opening a DB w/o the proper table should fail.
-        hook = importer.Hook2()
+        hook = importer.Hook()
         with TestDB() as db_path:
             db = sqlite3.connect(db_path)
             with db:
@@ -47,7 +47,7 @@ class Sqlite3HookTest(unittest.TestCase):
 
     def test_open_bad_file(self):
         # A non-DB file should fail.
-        hook = importer.Hook2()
+        hook = importer.Hook()
         fd, temp_path = tempfile.mkstemp()
         os.close(fd)
         try:
@@ -57,12 +57,12 @@ class Sqlite3HookTest(unittest.TestCase):
             os.unlink(temp_path)
 
     def test_finder(self):
-        # Should return an instance of Sqlite3Importer.
-        hook = importer.Hook2()
+        # Should return an instance of the importer.
+        hook = importer.Hook()
         with TestDB() as db_path:
             db = hook.open(db_path)
             finder = hook.finder(db, db_path, '')
-            self.assertTrue(isinstance(finder, importer.Sqlite3Importer))
+            self.assertTrue(isinstance(finder, importer.Importer))
 
 
 class PyFileLoaderTest(unittest.TestCase):
@@ -150,7 +150,7 @@ class Sqlite3ImporterTest(PyPycFileLoaderTest):
             self._cxn.execute(importer.sql_creation)
             self._cxn.execute('INSERT INTO FS VALUES (?, ?, ?)',
                                 [relative_path, self.mtime, self.data])
-        self.importer = importer.Sqlite3Importer(self._cxn, self.base_path,
+        self.importer = importer.Importer(self._cxn, self.base_path,
                                                     self.location)
 
     def tearDown(self):
