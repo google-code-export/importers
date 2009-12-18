@@ -1,24 +1,24 @@
-# XXX Rewrite once testing code is removed and put in the proper place.
-'''Proof-of-concept lazy importer for Python source code.
-DO NOT USE THIS IN REAL CODE! I am CHEATING by using private APIs to importlib,
-so don't expect this to always work. This was more for my personal edification.
-
-Simple doctest that creates a module named 'mod' which prints out "imported"
-when the module is initialized.
-    >>> code = """print("imported")
-    ... def fxn(): print("fxn called")"""
-    >>> with open('mod.py', 'w') as file:
-    ...   file.write(code)
-    ...
-    48
-    >>> import lazy
-    >>> import mod
-    >>> mod.fxn()
-    imported
-    fxn called
-
-'''
 import imp
+"""Lazy loader mixin.
+
+The returned module from the lazy mixin will delay calling the underlying
+loader until an attribute is accessed on the module. If the load is actually a
+reload then the load is done immediately.
+
+Be aware that the loader set on the module's __loader__ attribute will not
+instance check to the loader that was called to load the module as it is an
+instance of super.
+
+The mixin is designed to be mixed in with a normal loader through multiple
+inheritance, e.g.::
+
+    class LazyLoader(importers.lazy.Mixin, Loader):
+        pass
+
+The mixin must come before the actual loader that will perform the loading in
+order to override the load_module() method.
+
+"""
 from importlib import _bootstrap
 import sys
 import types
@@ -26,7 +26,12 @@ import types
 
 class Module(types.ModuleType):
 
-    """Module class to use in setting __class__."""
+    """Module class to use when setting __class__ after a load.
+
+    This class exists as __class__ can only be re-assigned to heap types (which
+    types.ModuleType is not).
+
+    """
 
     pass
 
@@ -34,23 +39,36 @@ class Module(types.ModuleType):
 class LazyModule(types.ModuleType):
 
     def __getattribute__(self, attr):
-        # XXX Why can't we use types.ModuleType directly?
-        # Remove the __getattribute__ method we are in.
+        """Load a module that was returned lazily.
+
+        The __class__ attribute is replaced in order to use types.ModuleType's
+        __getattribute__ implementation instead of this method. The __loader__
+        attribute is also replaced with the super class based off of Mixin.
+
+        """
+        # Remove this __getattribute__ method we are in by re-assigning.
         self.__class__ = Module
         # Fetch the real loader.
-        self.__loader__ = super(LazyMixin, self.__loader__)
+        self.__loader__ = super(Mixin, self.__loader__)
         # Actually load the module.
         self.__loader__.load_module(self.__name__)
         # Return the requested attribute.
-        # XXX what happens if they ask for __getattribute__?
         return getattr(self, attr)
 
 
-class LazyMixin:
+class Mixin:
 
-    """Mixin to create a lazy version of a loader."""
+    """Mixin to create a lazy version of a loader.
+
+    Loads are triggered by accessing an attribute on the lazy module that is
+    returned by this mixin. In the case of reloads the load_module() call to
+    the next loader is performed immediately.
+
+    """
 
     def load_module(self, name):
+        if name in sys.modules:
+            return super().load_module(name)
         # Create a lazy module that will type check.
         module = LazyModule(name)
         # Set the loader on the module as ModuleType will not.
@@ -60,26 +78,3 @@ class LazyMixin:
         sys.modules[name] = module
         return module
 
-
-# XXX Drop everything below here as was only for testing
-class LazyPyLoader(LazyMixin, _bootstrap._PyFileLoader):
-    pass
-
-
-class LazyPyFinder(_bootstrap._PyFileFinder):
-
-    _loader = LazyPyLoader
-
-
-# Install the finder as a side-effect
-import os
-sys.path_hooks.insert(0, LazyPyFinder)
-for path in ('', os.getcwd()):
-    if path in sys.path:
-        del sys.path_importer_cache[path]
-del path
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
