@@ -19,6 +19,11 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyFileLoader):
 
     """Importer for zipfiles."""
 
+    def __init__(self, archive, archive_path, location):
+        self._archive = archive
+        self._archive_path = archive_path
+        super().__init__(location)
+
     def file_exists(self, path):
         raise NotImplementedError
 
