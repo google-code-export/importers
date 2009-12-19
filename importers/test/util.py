@@ -22,6 +22,10 @@ class PyFileFinderTest(unittest.TestCase):
 
     """
 
+    location = 'pkg'
+    relative_file_path = os.path.join('pkg', 'module.py')
+    data = b'fake = True'
+
     def test_file_exists_for_finder(self):
         # Test that file_exists returns true for existing paths and false
         # otherwise.
