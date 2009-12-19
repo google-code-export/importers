@@ -42,5 +42,5 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyFileLoader):
         return self
 
     def get_data(self, path):
-        raise NotImplementedError
-
+        path = importers_sqlite3.remove_file(self._archive_path, path)
+        return self._archive.read(path)
