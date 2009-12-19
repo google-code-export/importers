@@ -35,7 +35,7 @@ class ZipHookTest(unittest.TestCase):
 
     def test_non_zip(self):
         # Finding a file that is not a zipfile should fail.
-        with open(self.path) as file:
+        with open(self.path, 'w') as file:
             file.write('abcd')
         with self.assertRaises(ValueError):
             self.hook.open(self.path)
