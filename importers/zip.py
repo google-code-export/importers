@@ -1,4 +1,6 @@
 from . import abc as importers_abc
+from . import sqlite3 as importers_sqlite3
+import os
 import zipfile
 
 class Hook(importers_abc.ArchiveHook):
@@ -22,10 +24,19 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyFileLoader):
     def __init__(self, archive, archive_path, location):
         self._archive = archive
         self._archive_path = archive_path
-        super().__init__(location)
+        super().__init__(os.path.join(archive_path, location))
 
     def file_exists(self, path):
-        raise NotImplementedError
+        """Check if the file exists in the zip file."""
+        try:
+            path = importers_sqlite3.remove_file(self._archive_path, path)
+        except ValueError:
+            return False
+        try:
+            self._archive.getinfo(path)
+            return True
+        except KeyError:
+            return False
 
     def loader(self, *args, **kwargs):
         return self
