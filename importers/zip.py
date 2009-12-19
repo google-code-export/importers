@@ -17,4 +17,14 @@ class Hook(importers_abc.ArchiveHook):
 
 class Importer(importers_abc.PyFileFinder, importers_abc.PyFileLoader):
 
-    pass
+    """Importer for zipfiles."""
+
+    def file_exists(self, path):
+        raise NotImplementedError
+
+    def loader(self, *args, **kwargs):
+        return self
+
+    def get_data(self, path):
+        raise NotImplementedError
+
