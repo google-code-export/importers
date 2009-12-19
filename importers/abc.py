@@ -136,12 +136,21 @@ class PyFileFinder(importlib.abc.Finder):
     """
 
     def __init__(self, location):
-        """Store the location that the finder searches in."""
+        """Store the location that the finder searches in.
+
+        For archive-based finders the location should be the entire path to the
+        archive file plus any package directories.
+
+        """
         self.location = location
 
     @abc.abstractmethod
     def file_exists(self, path:str) -> bool:
-        """Return true if the path exists, else false."""
+        """Return true if the path exists, else false.
+
+        The path is assumed to be an absolute path based on self.location.
+
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -171,12 +180,21 @@ class PyFileLoader(importlib.abc.PyLoader):
     """
 
     def __init__(self, location):
-        """Store the location that the loader searches in."""
+        """Store the location that the loader searches in.
+
+        The location is expected to be an absolute path which can include the
+        file path to an archive file plus the internal location of the file.
+
+        """
         self.location = location
 
     @abc.abstractmethod
     def file_exists(self, path:str) -> bool:
-        """Return true if the file exists, else false."""
+        """Return true if the file exists, else false.
+
+        The path is expected to be an absolute path.
+
+        """
         raise NotImplementedError
 
     def source_path(self, fullname):
@@ -209,7 +227,7 @@ class PyPycFileLoader(importlib.abc.PyPycLoader, PyFileLoader):
 
     source_path = PyFileLoader.source_path
 
-    # TODO(Python 3.2): remove
+    # TODO(Python 3.2): remove function (inherited version will work)
     def is_package(self, fullname):
         try:
             return PyFileLoader.is_package(self, fullname)
@@ -227,7 +245,11 @@ class PyPycFileLoader(importlib.abc.PyPycLoader, PyFileLoader):
     @abc.abstractmethod
     def path_mtime(self, path:str) -> int:
         """Return the modification time for the specified path, raising IOError
-        if the path cannot be found."""
+        if the path cannot be found.
+
+        The path is expected to be an absolute path.
+
+        """
         raise NotImplementedError
 
     def source_mtime(self, fullname):
@@ -240,7 +262,11 @@ class PyPycFileLoader(importlib.abc.PyPycLoader, PyFileLoader):
     @abc.abstractmethod
     def write_data(self, path:str, data:bytes) -> bool:
         """Try to write the data to the path, returning a boolean based on
-        whether the bytes were actually written."""
+        whether the bytes were actually written.
+
+        The path is expected to be an absolute path.
+
+        """
         raise NotImplementedError
 
     def write_bytecode(self, fullname, data):
