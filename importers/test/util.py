@@ -59,6 +59,8 @@ class PyFileLoaderTest(unittest.TestCase):
         # Should return the data that is stored.
         path = os.path.join(self.base_path, self.relative_file_path)
         self.assertEqual(self.importer.get_data(path), self.data)
+        with self.assertRaises(IOError):
+            self.importer.get_data("I don't exist")
 
     def test_load_module(self):
         # Integration test for load_module().
