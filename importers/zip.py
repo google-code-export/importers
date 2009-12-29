@@ -42,5 +42,8 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyFileLoader):
         return self
 
     def get_data(self, path):
-        path = importers_sqlite3.remove_file(self._archive_path, path)
+        try:
+            path = importers_sqlite3.remove_file(self._archive_path, path)
+        except ValueError:
+            raise IOError("{!r} does not exist".format(path))
         return self._archive.read(path)
