@@ -74,7 +74,6 @@ class Mixin:
         # Set the loader on the module as ModuleType will not.
         module.__loader__ = self
         # Insert the module into sys.modules.
-        # XXX What to do if it already exists (i.e. reload)?
         sys.modules[name] = module
         return module
 
