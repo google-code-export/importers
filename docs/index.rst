@@ -88,7 +88,8 @@ development of importers.
 
     .. method:: __call__(path)
 
-        XXX
+        If the hook can handle *path*, then return the object returned by
+        :meth:`finder`, else raise :exc:`ImportError`.
 
 
 .. class:: PyFileFinder(location)
@@ -116,21 +117,42 @@ development of importers.
 .. class:: PyFileLoader(location)
 
     An abstract base class designed for working with file paths to load Python
-    source files. The class inherits from :class:`importlib.abc.PyLoader`.
+    source files. The class inherits from :class:`importlib.abc.PyLoader`
+    (which includes the need to implement
+    :meth:`importlib.abc.PyLoader.get_data`).
 
     The *location* argument is the absolute path to where the loader should be
     searching.
 
-    XXX
+    .. method:: file_exists(path)
+
+        An abstract method which returns the boolean representing whether the
+        path exists or not. The method must at least work with absolute paths.
+        Support for relative paths is undefined because of ambiguity of where
+        to anchor the search (location, archive file root, etc.).
 
 
 .. class:: PyPycFileLoader(location)
 
-    XXX
+    An abstract base class designed for working with file paths to load Python
+    source and bytecode files. The class inherits from
+    :class:`PyFileLoader` and all of its abstract methods.
 
 
-:mod:`importers.lazy` -- XXX
-----------------------------
+    .. method:: path_mtime(path)
+
+        Return the mtime for *path*. The value of *path* is expected to be an
+        absolute path.
+
+    .. method:: write_data(path, data)
+
+        Try to write the *data* bytes to *path*, returning a boolean based on
+        whether it occurred or not. The value of *path* is expected to be an
+        absolute path.
+
+
+:mod:`importers.lazy` -- Lazy loader mix-in
+-------------------------------------------
 
 XXX
 
