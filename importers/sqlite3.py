@@ -23,7 +23,7 @@ import sqlite3
 import time
 
 
-def neutralpath(path):
+def _neutralpath(path):
     """Convert a path to only use forward slashes."""
     if os.sep != '/':
         return path.replace(os.sep, '/')
@@ -72,7 +72,7 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyPycFileLoader):
             path = remove_file(self._db_path, path)
         except ValueError:
             return False
-        path = neutralpath(path)
+        path = _neutralpath(path)
         with self._cxn:
             cursor = self._cxn.execute('SELECT path FROM FS WHERE path=?',
                                         [path])
@@ -90,7 +90,7 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyPycFileLoader):
                 raise IOError("{} not pointing to {}".format(path,
                                                              self._db_path))
             path = path[len(self._db_path)+1:]
-        path = neutralpath(path)
+        path = _neutralpath(path)
         with self._cxn:
             cursor = self._cxn.execute('SELECT data FROM FS WHERE path=?',
                                         [path])
@@ -102,7 +102,7 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyPycFileLoader):
 
     def path_mtime(self, path):
         """Return the modification time for the path."""
-        path = neutralpath(remove_file(self._db_path, path))
+        path = _neutralpath(remove_file(self._db_path, path))
         with self._cxn:
             cursor = self._cxn.execute('SELECT mtime FROM FS WHERE path=?',
                                         [path])
@@ -113,7 +113,7 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyPycFileLoader):
 
     def write_data(self, path, data):
         """Write the data to the path."""
-        path = neutralpath(remove_file(self._db_path, path))
+        path = _neutralpath(remove_file(self._db_path, path))
         with self._cxn:
             self._cxn.execute('INSERT OR REPLACE INTO FS VALUES (?, ?, ?)',
                                 [path, int(time.time()), data])

@@ -73,7 +73,7 @@ class Sqlite3ImporterTest(util.PyFileFinderTest, util.PyPycFileLoaderTest):
     def setUp(self):
         self._directory = tempfile.mkdtemp()
         self.base_path = os.path.join(self._directory, 'importers_test.db')
-        relative_path = importer.neutralpath(self.relative_file_path)
+        relative_path = importer._neutralpath(self.relative_file_path)
         self.mtime = 42
         self._cxn = sqlite3.connect(self.base_path)
         with self._cxn:
