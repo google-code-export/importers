@@ -154,7 +154,30 @@ development of importers.
 :mod:`importers.lazy` -- Lazy loader mix-in
 -------------------------------------------
 
-XXX
+A set of classes to allow for the lazy loading of modules. The benefits of lazy
+loading is startup time; modules are loaded as needed, preventing the load of
+modules that are not needed until much later to be postponed. This does lead to
+the drawback, though, of any import errors being triggers at the time of
+initial module usage instead of at the import statement that caused the import
+in the first place.
+
+.. class:: Module
+
+    A subclass of :cls:`types.ModuleType`. When a module that is lazily loaded
+    is actually loaded it will be a subclass of this class.
+
+.. class:: LazyModule
+
+    A subclass of :cls:`types.ModuleType`. This is the class that lazily loaded
+    modules inherit from *before* they are actually loaded. Accessing any
+    attribute on an instance of this class will trigger the actual loading of
+    the module.
+
+.. class:: Mixin
+
+    A mixin to use with a :term:`loader` to make it lazily load modules. Being
+    a mixin, this class must come **before** the loader that is being used to
+    do the actual loading of the module.
 
 
 :mod:`importers.sqlite3` --- Importer for sqlite3 database files
