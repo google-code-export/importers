@@ -87,8 +87,8 @@ development of importers.
 
     .. method:: finder(archive, archive_path, location)
 
-        An abstract method that should return the :term:`finder` for the specified *location* within the
-        *archive*.
+        An abstract method that should return the :term:`finder` for the
+        specified *location* within the *archive*.
 
         *archive_path* will be the path that was passed to
         :meth:`ArchiveHook.open` while *archive* will be the object returned
@@ -170,16 +170,17 @@ loading is startup time; modules are loaded as needed, preventing the load of
 modules that are not needed until much later to be postponed. This does lead to
 the drawback, though, of any import errors being triggers at the time of
 initial module usage instead of at the import statement that caused the import
+
 in the first place.
 
 .. class:: Module
 
-    A subclass of :cls:`types.ModuleType`. When a module that is lazily loaded
+    A subclass of :class:`types.ModuleType`. When a module that is lazily loaded
     is actually loaded it will be a subclass of this class.
 
 .. class:: LazyModule
 
-    A subclass of :cls:`types.ModuleType`. This is the class that lazily loaded
+    A subclass of :class:`types.ModuleType`. This is the class that lazily loaded
     modules inherit from *before* they are actually loaded. Accessing any
     attribute on an instance of this class will trigger the actual loading of
     the module.
@@ -194,7 +195,73 @@ in the first place.
 :mod:`importers.sqlite3` --- Importer for sqlite3 database files
 ----------------------------------------------------------------
 
-XXX
+An importer for Python source and bytecode that uses :mod:`sqlite3` databases
+as the archive format. The dqlite3 database is expected to have a table named
+``FS`` with the following schema::
+
+    CREATE TABLE FS (path TEXT PRIMARY KEY, mtime INTEGER, data BLOB);
+
+The *path* column stores the relative path to a "file" in the archive (e.g.
+``pkg/__init__.py``). *mtime* is the modification time for the "file". The
+*data* column stores the contents of the "file".
+
+.. class:: Hook
+
+    A subclass of :class:`importers.abc.ArchiveHook` that uses :mod:`sqlite3`
+    databases.
+
+    .. method:: open(path)
+
+        An implementation of :meth:`importers.abc.ArchiveHook.open`. The file
+        path is tested to see if it is an acceptable database by opening it and
+        verifying that the ``FS`` table exists.
+
+    .. method:: finder(archive, archive_path, location)
+
+        An implementation of :meth:`importers.abc.ArchiveHook.finder` that
+        returns an instance of :class:`importers.sqlite3.Importer`.
+
+
+.. class:: Importer(db, db_path, location)
+
+    An implementation of :class:`importers.abc.PyFileFinder` and
+    :class:`importers.abc.PyPycFileLoader`. The *db* is the
+    :class:`sqlite3.Connection` instance of the database to use, *db_path* is the
+    file path to the open database, and *location* is the relative package
+    location that the importer is to search in.
+
+    .. method:: loader(\*args, \*\*kwargs)
+
+        An implementation of :meth:`importers.abc.PyFileFinder` that returns
+        ``self``.
+
+    .. method:: file_exists(path)
+
+        An implementation of :meth:`importers.abc.PyFileFinder.file_exists` and
+        :meth:`importers.abc.PyPycFileLoader.file_exists`. *path* is expected
+        to be an absolute path. A file's existence is based on stripping off
+        the database's path from *path* and seeing if the remaining file path
+        matches a value in the ``path`` column in the ``FS`` table.
+
+    .. method:: get_data(path)
+
+        An implementation of :meth:`importers.abc.PyPycFileLoader.get_data.`. *path* can
+        be an absolute path (in which case the database file path is stripped
+        off) or a relative one (in which case the path is used directly to
+        compare against the ``path`` column in the ``FS`` table). The value
+        stored in the ``data`` column is returned as bytes.
+
+    .. method:: path_mtime(path)
+
+        An implementation of :meth:`importers.abc.PyPycFileLoader.path_mtime`.
+        *path* is expected to be an absolute path. The value found in the
+        ``mtime`` column is returned.
+
+    .. method:: write_data(path, data)
+
+        An implementation of :meth:`importers.abc.PyPycFileLoader.write_data`.
+        *path* is expected to be an absolute path. A row is added to the
+        database with the value of ``(path, int(time.time()), data)``.
 
 
 :mod:`importers.zip` -- Importer for zip files
