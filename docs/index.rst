@@ -43,6 +43,17 @@ There are also some new terms introduced by this project.
         location within a package).
 
 
+Functions
+---------
+
+.. function:: remove_file(file_path, full_path)
+
+    Strip *file_path* from the beginning of *full_path*, returning the relative
+    path suffix that is left. This function is useful when working with paths
+    that start with the absolute path to an archive file and end with the
+    relative path within a package.
+
+
 :mod:`importers.abc` -- Abstract base classes to help create importers
 ----------------------------------------------------------------------
 
