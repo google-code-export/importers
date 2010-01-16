@@ -1,5 +1,5 @@
+from . import remove_file
 from . import abc as importers_abc
-from . import sqlite3 as importers_sqlite3
 import os
 import zipfile
 
@@ -29,7 +29,7 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyFileLoader):
     def file_exists(self, path):
         """Check if the file exists in the zip file."""
         try:
-            path = importers_sqlite3.remove_file(self._archive_path, path)
+            path = remove_file(self._archive_path, path)
         except ValueError:
             return False
         try:
@@ -43,7 +43,7 @@ class Importer(importers_abc.PyFileFinder, importers_abc.PyFileLoader):
 
     def get_data(self, path):
         try:
-            path = importers_sqlite3.remove_file(self._archive_path, path)
+            path = remove_file(self._archive_path, path)
         except ValueError:
             raise IOError("{!r} does not exist".format(path))
         return self._archive.read(path)
