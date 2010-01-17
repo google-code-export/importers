@@ -9,6 +9,10 @@
 .. module:: importers
    :synopsis: Code to help write importers.
 
+PyPI page: http://pypi.python.org/pypi/importers
+
+Project page (including issue tracker): http://code.google.com/p/importers/
+
 .. toctree::
    :maxdepth: 2
 
@@ -196,7 +200,7 @@ in the first place.
 ----------------------------------------------------------------
 
 An importer for Python source and bytecode that uses :mod:`sqlite3` databases
-as the archive format. The dqlite3 database is expected to have a table named
+as the archive format. The sqlite3 database is expected to have a table named
 ``FS`` with the following schema::
 
     CREATE TABLE FS (path TEXT PRIMARY KEY, mtime INTEGER, data BLOB);
