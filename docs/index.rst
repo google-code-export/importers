@@ -267,7 +267,44 @@ The *path* column stores the relative path to a "file" in the archive (e.g.
 :mod:`importers.zip` -- Importer for zip files
 ----------------------------------------------
 
-XXX
+An importer for Python source (but not bytecode) that uses zip files as the
+archive format.
+
+.. class:: Hook
+
+    An implementation of :class:`importers.abc.ArchiveHook`.
+
+    .. method:: open(path)
+
+        Returns the :class:`zipfile.ZipFile` instance for *path* if
+        :func:`zipfile.is_zipfile` says the path is a zipfile.
+
+    .. method:: finder(archive, archive_path, location)
+
+        Returns an instance of :class:`Importer` for the passed-in zipfile and
+        package location.
+
+.. class:: Importer(archive, archive_path, location)
+
+    An implementation of both :class:`importers.abc.PyFileFinder` and
+    :class:`importers.abc.PyFileLoader`. *archive* is to be an instance of
+    :class:`zipfile.ZipFile`, *archive_path* is the absolute path to the
+    zipfile, and *location* is the relative package path that the importer is
+    to search in.
+
+    .. method:: file_exists(path)
+
+        Return :const:`True` if *path* (which should be absolute) exists in the
+        zipfile based on the removal of the zipfile path.
+
+    .. method:: loader(\*args, \*\*kwargs)
+
+        Returns ``self``.
+
+    .. method:: get_data(path)
+
+        Return the bytes found at *path*. The argument is expected to be an
+        absolute path.
 
 
 .. Indices and tables
