@@ -103,6 +103,7 @@ class ArchiveHook(metaclass=abc.ABCMeta):
     def __call__(self, path):
         """See if the path contains an archive file path, returning a finder if
         appropriate."""
+        path = os.path.abspath(path)
         for pre_path, location in _super_paths(path):
             if pre_path in self._archives:
                 return self.finder(self._archives[pre_path], pre_path,

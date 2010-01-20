@@ -88,6 +88,17 @@ class ArchiveHookTest(unittest.TestCase):
         with self.assertRaises(ImportError):
             hook(self.file_path)
 
+    def test_relative_path(self):
+        # A relative path should be made absolute for passing to the finder.
+        self.addCleanup(support.unlink, support.TESTFN)
+        relative_path = support.TESTFN
+        abs_path = os.path.abspath(relative_path)
+        with open(abs_path, 'w') as file:
+            file.write("importers test file")
+        hook = MockArchiveHook(abs_path)
+        finder = hook(relative_path)
+        self.assertEqual(finder[1], abs_path)
+
 
 class MockPyFileFinder(importers_abc.PyFileFinder):
 
