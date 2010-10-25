@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(name='importers',
-      version='0.1',
+      version='0.1.1',
       description='Various importers and utility code for writing importers',
       author='Brett Cannon',
       author_email='brett@python.org',

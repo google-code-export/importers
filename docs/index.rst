@@ -177,6 +177,8 @@ initial module usage instead of at the import statement that caused the import
 
 in the first place.
 
+.. currentmodule:: importers.lazy
+
 .. class:: Module
 
     A subclass of :class:`types.ModuleType`. When a module that is lazily loaded
@@ -208,6 +210,9 @@ as the archive format. The sqlite3 database is expected to have a table named
 The *path* column stores the relative path to a "file" in the archive (e.g.
 ``pkg/__init__.py``). *mtime* is the modification time for the "file". The
 *data* column stores the contents of the "file".
+
+
+.. currentmodule: importers.sqlite3
 
 .. class:: Hook
 
@@ -273,6 +278,8 @@ The *path* column stores the relative path to a "file" in the archive (e.g.
 
 An importer for Python source (but not bytecode) that uses zip files as the
 archive format.
+
+.. currentmodule:: importers.zip
 
 .. class:: Hook
 
