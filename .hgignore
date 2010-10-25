@@ -4,4 +4,6 @@ syntax: glob
 **.pyc
 **.pyo
 
-docs/_build/*
+dist
+docs/_build
+importers.egg-info
