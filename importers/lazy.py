@@ -39,11 +39,16 @@ class Module(types.ModuleType):
 class LazyModule(types.ModuleType):
 
     def __getattribute__(self, attr):
-        """Load a module that was returned lazily.
+        """Load the module and return an attribute's value.
 
         The __class__ attribute is replaced in order to use types.ModuleType's
-        __getattribute__ implementation instead of this method. The __loader__
-        attribute is also replaced with the super class based off of Mixin.
+        __getattribute__ implementation instead of this method.
+
+        The __loader__ attribute is also replaced with the super() object based
+        off of Mixin. This does break introspection on the loader (e.g.,
+        ``isinstance(loader, importlib.abc.Loader)``), but it does allow for
+        the mixin to appear anywhere in the MRO and still be properly stripped
+        out.
 
         """
         # Remove this __getattribute__ method we are in by re-assigning.
@@ -67,6 +72,7 @@ class Mixin:
     """
 
     def load_module(self, name):
+        # Don't be lazy during a reload.
         if name in sys.modules:
             return super().load_module(name)
         # Create a lazy module that will type check.
