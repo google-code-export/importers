@@ -60,6 +60,10 @@ class LazyMixinTest(unittest.TestCase):
         self.assertEqual(module.__loader__.__doc__, MockLoader.__doc__)
         self.assertEqual(module.__class__.__getattribute__,
                             types.ModuleType.__getattribute__)
+        # Should not be able to triger the old __getattribute__.
+        module.__loader__ = None
+        self.assertFalse(module.__loader__)  # Trigger an attribute get.
+        self.assertFalse(module.__loader__)
 
     def test__getattribute__read(self):
         # Accessing __getattribute__ itself (or any attribute) should trigger
