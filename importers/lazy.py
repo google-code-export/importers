@@ -1,4 +1,3 @@
-import imp
 """Lazy loader mixin.
 
 The returned module from the lazy mixin will delay calling the underlying
@@ -19,7 +18,6 @@ The mixin must come before the actual loader that will perform the loading in
 order to override the load_module() method.
 
 """
-from importlib import _bootstrap
 import sys
 import types
 
@@ -46,7 +44,7 @@ class LazyModule(types.ModuleType):
 
         The __loader__ attribute is also replaced with the super() object based
         off of Mixin. This does break introspection on the loader (e.g.,
-        ``isinstance(loader, importlib.abc.Loader)``), but it does allow for
+        ``isinstance(loader, importlib.abc.Loader)``), but it allows for
         the mixin to appear anywhere in the MRO and still be properly stripped
         out.
 
