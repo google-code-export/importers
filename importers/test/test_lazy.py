@@ -15,13 +15,13 @@ class MockLoader(importlib.abc.Loader):
     """
 
     def __init__(self):
-        self.loaded = False
+        self.loaded = 0
 
     def load_module(self, fullname):
         """As the lazy loader will have already put the module in sys.modules,
         simply return that and modify as necessary as it will be loaded at this
         point."""
-        self.loaded = True
+        self.loaded += 1
         module = sys.modules[fullname]
         module.attr = None
         return module
@@ -110,16 +110,18 @@ class LazyMixinTest(unittest.TestCase):
         module = self.get_module()
         module.new_attr = 42
         self.assertIsNone(module.attr)
+        self.assertTrue(module.__loader__)
         imp.reload(module)
         self.assertTrue(hasattr(module, 'new_attr'))
         self.assertEqual(module.new_attr, 42)
 
-    def test_manual_reload(self):
+    def test_loader(self):
         # Calling __loader__.load_module() should work w/o issue.
         module = self.get_module()
         module.attr = True
         module.__loader__.load_module(self.name)  # Reset 'attr' to None
         self.assertFalse(module.attr)
+        self.assertEqual(self.loader.loaded, 2)
 
     def test_isinstance(self):
         # Should be considered a module.
