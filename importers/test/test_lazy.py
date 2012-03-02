@@ -100,6 +100,13 @@ class LazyMixinTest(unittest.TestCase):
         module.__loader__.load_module(self.name)  # Reset 'attr' to None
         self.assertFalse(module.attr)
 
+    def test_isinstance(self):
+        # Should be considered a module.
+        module = self.loader.load_module(self.name)
+        self.assertTrue(isinstance(module, types.ModuleType))
+        self.assertTrue(module.__name__)  # Trigger load.
+        self.assertTrue(isinstance(module, types.ModuleType))
+
 
 def main():
     from test.support import run_unittest
