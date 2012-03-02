@@ -74,28 +74,37 @@ class LazyMixinTest(unittest.TestCase):
         # the load.
         module = self.get_module()
         self.assertFalse(self.loader.loaded)
-        module.__getattribute__
+        self.assertIsNone(module.attr)
         self.assertTrue(self.loader.loaded)
 
     @unittest.expectedFailure
     def test_attr_write(self):
-        # Setting an attribute should trigger the load **before** the attribute
-        # is actually mutated.
+        # Setting an attribute should not cause it to be lost.
         module = self.get_module()
         self.assertFalse(self.loader.loaded)
         module.attr = True
-        self.assertTrue(self.loader.loaded,
-                        'module not loaded after an attribute assignment')
+        module.__name__ = 'changed name'
         self.assertTrue(module.attr)
+        self.assertEqual(module.__name__, 'changed name')
 
     @unittest.expectedFailure
-    def test_imp_reload(self):
-        # A reload should trigger an immediate load.
+    def test_imp_reload_unloaded(self):
+        # Reloading an unloaded module should not cause issues.
         module = self.get_module()
         self.assertFalse(self.loader.loaded)
         # XXX failing because there is no finder to return the lazy loader
         imp.reload(module)
         self.assertTrue(self.loader.loaded)
+
+    @unittest.expectedFailure
+    def test_imp_reload_loaded(self):
+        # A loaded module should reload w/o issue.
+        module = self.get_module()
+        module.new_attr = 42
+        self.assertIsNone(module.attr)
+        imp.reload(module)
+        self.assertTrue(hasattr(module, 'new_attr'))
+        self.assertEqual(module.new_attr, 42)
 
     def test_manual_reload(self):
         # Calling __loader__.load_module() should work w/o issue.
