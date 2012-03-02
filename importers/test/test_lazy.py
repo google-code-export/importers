@@ -47,9 +47,13 @@ class LazyMixinTest(unittest.TestCase):
         except KeyError:
             pass
 
+    def get_module(self):
+        """Return the lazily-loaded module."""
+        return self.loader.load_module(self.name)
+
     def test_attr_access(self):
         # Accessing an attribute should trigger a load.
-        module = self.loader.load_module(self.name)
+        module = self.get_module()
         self.assertFalse(self.loader.loaded)
         self.assertFalse(module.attr)  # Triggers load
         self.assertTrue(self.loader.loaded)
@@ -68,7 +72,7 @@ class LazyMixinTest(unittest.TestCase):
     def test__getattribute__read(self):
         # Accessing __getattribute__ itself (or any attribute) should trigger
         # the load.
-        module = self.loader.load_module(self.name)
+        module = self.get_module()
         self.assertFalse(self.loader.loaded)
         module.__getattribute__
         self.assertTrue(self.loader.loaded)
@@ -77,7 +81,7 @@ class LazyMixinTest(unittest.TestCase):
     def test_attr_write(self):
         # Setting an attribute should trigger the load **before** the attribute
         # is actually mutated.
-        module = self.loader.load_module(self.name)
+        module = self.get_module()
         self.assertFalse(self.loader.loaded)
         module.attr = True
         self.assertTrue(self.loader.loaded,
@@ -87,7 +91,7 @@ class LazyMixinTest(unittest.TestCase):
     @unittest.expectedFailure
     def test_imp_reload(self):
         # A reload should trigger an immediate load.
-        module = self.loader.load_module(self.name)
+        module = self.get_module()
         self.assertFalse(self.loader.loaded)
         # XXX failing because there is no finder to return the lazy loader
         imp.reload(module)
@@ -95,14 +99,14 @@ class LazyMixinTest(unittest.TestCase):
 
     def test_manual_reload(self):
         # Calling __loader__.load_module() should work w/o issue.
-        module = self.loader.load_module(self.name)
+        module = self.get_module()
         module.attr = True
         module.__loader__.load_module(self.name)  # Reset 'attr' to None
         self.assertFalse(module.attr)
 
     def test_isinstance(self):
         # Should be considered a module.
-        module = self.loader.load_module(self.name)
+        module = self.get_module()
         self.assertTrue(isinstance(module, types.ModuleType))
         self.assertTrue(module.__name__)  # Trigger load.
         self.assertTrue(isinstance(module, types.ModuleType))
