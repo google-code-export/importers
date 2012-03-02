@@ -40,7 +40,8 @@ class LazyModule(types.ModuleType):
         """Load the module and return an attribute's value.
 
         The __class__ attribute is replaced in order to use types.ModuleType's
-        __getattribute__ implementation instead of this method.
+        __getattribute__ implementation instead of this method to avoid the
+        overhead cost of passing through the function.
 
         The __loader__ attribute is also replaced with the super() object based
         off of Mixin. This does break introspection on the loader (e.g.,
