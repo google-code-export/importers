@@ -17,6 +17,15 @@ inheritance, e.g.::
 The mixin must come before the actual loader that will perform the loading in
 order to override the load_module() method.
 
+No lazy finder is provided as it breaks the common pattern of::
+
+    try:
+        import spam
+    except ImportError:
+        import bacon
+
+by delaying the ImportError until execution has past the try/except block.
+
 """
 import sys
 import types
