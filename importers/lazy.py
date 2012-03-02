@@ -36,6 +36,13 @@ class Module(types.ModuleType):
 
 class LazyModule(types.ModuleType):
 
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+        # So as to reset __name__ just prior to loading to keep things from
+        # going bonkers from the unexpected change.
+        self.__original_name__ = name
+
+
     def __getattribute__(self, attr):
         """Load the module and return an attribute's value.
 
@@ -54,8 +61,15 @@ class LazyModule(types.ModuleType):
         self.__class__ = Module
         # Fetch the real loader.
         self.__loader__ = super(Mixin, self.__loader__)
+        # Catch any mutations to the module *after* all final changes have
+        # occurred above.
+        state = self.__dict__.copy()
+        # Make sure to not load under the wrong pretenses.
+        original_name = state['__original_name__']
         # Actually load the module.
-        self.__loader__.load_module(self.__name__)
+        self.__loader__.load_module(original_name)
+        # Restore mutations.
+        self.__dict__.update(state)
         # Return the requested attribute.
         return getattr(self, attr)
 

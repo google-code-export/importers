@@ -77,15 +77,23 @@ class LazyMixinTest(unittest.TestCase):
         self.assertIsNone(module.attr)
         self.assertTrue(self.loader.loaded)
 
-    @unittest.expectedFailure
     def test_attr_write(self):
         # Setting an attribute should not cause it to be lost.
         module = self.get_module()
         self.assertFalse(self.loader.loaded)
         module.attr = True
-        module.__name__ = 'changed name'
+        module.new_attr = 42
+        self.assertFalse(self.loader.loaded)
         self.assertTrue(module.attr)
-        self.assertEqual(module.__name__, 'changed name')
+        self.assertTrue(self.loader.loaded)
+        self.assertEqual(module.new_attr, 42)
+
+    def test_renamed(self):
+        # Survive __name__ being changed.
+        module = self.get_module()
+        module.__name__ = 'changed name'
+        self.assertIsNone(module.attr)
+        self.assertEquals(module.__name__, 'changed name')
 
     @unittest.expectedFailure
     def test_imp_reload_unloaded(self):
